@@ -1,0 +1,15 @@
+# Abhängigkeiten und Builds
+node_modules/
+app/
+dist/
+web-build/
+.expo/
+
+# Geheimnisse – niemals hochladen
+.env
+.env.*
+!.env.example
+
+# System
+.DS_Store
+Thumbs.db

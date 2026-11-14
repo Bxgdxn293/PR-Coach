@@ -8,6 +8,7 @@ import { listBlocked, unblockUser, type BlockedUser } from '../lib/social';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export function BlockedScreen() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -53,17 +54,17 @@ export function BlockedScreen() {
 
   return (
     <Screen>
-      <Header title="Blocked" />
+      <Header title={tr("Blocked")} />
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} size="large" accessibilityLabel="Loading blocked users" />
+          <ActivityIndicator color={colors.accent} size="large" accessibilityLabel={tr("Loading blocked users")} />
         </View>
       ) : error ? (
         <View style={styles.center}>
-          <Text style={styles.emptyTitle}>Couldn't load list</Text>
+          <Text style={styles.emptyTitle}>{tr("Couldn't load list")}</Text>
           <Text style={styles.emptyText}>{error}</Text>
           <Pressable accessibilityRole="button" onPress={() => load('initial')} style={styles.primary}>
-            <Text style={styles.primaryText}>Retry</Text>
+            <Text style={styles.primaryText}>{tr("Retry")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -84,8 +85,8 @@ export function BlockedScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Feather name="slash" size={32} color={colors.muted} />
-              <Text style={styles.emptyTitle}>No blocked users</Text>
-              <Text style={styles.emptyText}>People you block can't send you requests or use your invite code.</Text>
+              <Text style={styles.emptyTitle}>{tr("No blocked users")}</Text>
+              <Text style={styles.emptyText}>{tr("People you block can't send you requests or use your invite code.")}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -98,12 +99,12 @@ export function BlockedScreen() {
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Unblock ${name}`}
+                  accessibilityLabel={tr("Unblock {0}", [name])}
                   disabled={busy}
                   onPress={() => unblock(item)}
                   style={[styles.unblock, busy && styles.dim]}
                 >
-                  {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.unblockText}>Unblock</Text>}
+                  {busy ? <ActivityIndicator color={colors.text} /> : <Text style={styles.unblockText}>{tr("Unblock")}</Text>}
                 </Pressable>
               </View>
             );

@@ -8,6 +8,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { Unit, Workout } from '../types';
 
+import { tr } from '../lib/i18n';
 type Props = {
   exercise: string;
   workouts: Workout[];
@@ -27,25 +28,25 @@ export function ProgressCard({ exercise, workouts, unit, isPremium, onUpgrade }:
 
   const status =
     plateau.status === 'plateau'
-      ? `Plateau: no new best e1RM in ${plateau.sessionsSinceBest} sessions`
+      ? tr("Plateau: no new best e1RM. Sessions since your best: {0}", [plateau.sessionsSinceBest])
       : plateau.status === 'progressing'
         ? plateau.sessionsSinceBest === 0
-          ? 'New best e1RM in your last session'
-          : `${plateau.sessionsSinceBest} session${plateau.sessionsSinceBest === 1 ? '' : 's'} since your best e1RM`
+          ? tr("New best e1RM in your last session")
+          : tr("Sessions since your best e1RM: {0}", [plateau.sessionsSinceBest])
         : plateau.status === 'building'
-          ? 'Log a few more sessions to detect plateaus'
-          : 'No data yet';
+          ? tr("Log a few more sessions to detect plateaus")
+          : tr("No data yet");
 
   return (
     <View style={styles.card}>
       <View style={styles.top}>
         <View style={styles.flex}>
-          <Text style={styles.name}>{exercise}</Text>
+          <Text style={styles.name}>{tr(exercise)}</Text>
           <Text style={[styles.status, plateau.status === 'plateau' && { color: colors.warn }]}>{status}</Text>
         </View>
         <View style={styles.right}>
           <Text style={styles.value}>{plateau.bestE1rm > 0 ? formatWeight(bestE1rm(exercise, workouts), unit) : '–'}</Text>
-          <Text style={styles.label}>EST. 1RM</Text>
+          <Text style={styles.label}>{tr("EST. 1RM")}</Text>
         </View>
       </View>
 
@@ -66,8 +67,8 @@ export function ProgressCard({ exercise, workouts, unit, isPremium, onUpgrade }:
           ))}
         </>
       ) : (
-        <Pressable accessibilityRole="button" accessibilityLabel="PR forecast and plateau fixes, Premium" onPress={onUpgrade} style={styles.lock}>
-          <Text style={styles.lockText}>PR forecast &amp; plateau fixes</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("PR forecast and plateau fixes, Premium")} onPress={onUpgrade} style={styles.lock}>
+          <Text style={styles.lockText}>{tr("PR forecast & plateau fixes")}</Text>
           <ProPill />
           <Feather name="lock" size={18} color={colors.muted} />
         </Pressable>

@@ -14,6 +14,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
@@ -49,25 +50,25 @@ export function TemplateEditScreen() {
 
   const save = async () => {
     if (items.length === 0) {
-      Alert.alert('No exercises', 'Add at least one exercise.');
+      Alert.alert(tr("No exercises"), tr("Add at least one exercise."));
       return;
     }
     setSaving(true);
     const err = await saveEdit(id, name, items, isPremium);
     setSaving(false);
-    if (err === 'name_taken') Alert.alert('Name already used', 'Pick another name for this template.');
-    else if (err === 'limit') Alert.alert('Template limit reached', 'Delete a template first or upgrade to Premium.');
+    if (err === 'name_taken') Alert.alert(tr("Name already used"), tr("Pick another name for this template."));
+    else if (err === 'limit') Alert.alert(tr("Template limit reached"), tr("Delete a template first or upgrade to Premium."));
     else navigation.goBack();
   };
 
   const Stepper = ({ label, value, onChange, min, max }: { label: string; value: number; onChange: (n: number) => void; min: number; max: number }) => (
     <View style={styles.stepper} accessibilityLabel={`${label}: ${value}`}>
       <Text style={styles.stepLabel}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Fewer ${label}`} onPress={() => onChange(clamp(value - 1, min, max))} style={styles.stepBtn}>
+      <Pressable accessibilityRole="button" accessibilityLabel={tr("Fewer {0}", [label])} onPress={() => onChange(clamp(value - 1, min, max))} style={styles.stepBtn}>
         <Feather name="minus" size={16} color={colors.text} />
       </Pressable>
       <Text style={styles.stepValue}>{value}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`More ${label}`} onPress={() => onChange(clamp(value + 1, min, max))} style={styles.stepBtn}>
+      <Pressable accessibilityRole="button" accessibilityLabel={tr("More {0}", [label])} onPress={() => onChange(clamp(value + 1, min, max))} style={styles.stepBtn}>
         <Feather name="plus" size={16} color={colors.text} />
       </Pressable>
     </View>
@@ -75,12 +76,12 @@ export function TemplateEditScreen() {
 
   return (
     <Screen>
-      <Header title={id ? 'Edit template' : 'New template'} />
+      <Header title={id ? tr("Edit template") : tr("New template")} />
       <TextInput
         value={name}
         onChangeText={setName}
-        accessibilityLabel="Template name"
-        placeholder="Template name, e.g. Push Day"
+        accessibilityLabel={tr("Template name")}
+        placeholder={tr("Template name, e.g. Push Day")}
         placeholderTextColor={colors.muted}
         maxLength={40}
         style={styles.nameInput}
@@ -89,25 +90,25 @@ export function TemplateEditScreen() {
         {items.map((e, i) => (
           <View key={`${e.name}-${i}`} style={styles.card}>
             <View style={styles.cardHead}>
-              <Text style={styles.exName}>{e.name}</Text>
+              <Text style={styles.exName}>{tr(e.name)}</Text>
               <ExerciseMini name={e.name} onPress={() => setInfo(e.name)} height={44} />
-              <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${e.name}`} onPress={() => setItems((p) => p.filter((_, j) => j !== i))} style={styles.iconBtn}>
+              <Pressable accessibilityRole="button" accessibilityLabel={tr("Remove {0}", [e.name])} onPress={() => setItems((p) => p.filter((_, j) => j !== i))} style={styles.iconBtn}>
                 <Feather name="trash-2" size={18} color={colors.muted} />
               </Pressable>
             </View>
             <View style={styles.steppers}>
-              <Stepper label="Sets" value={e.sets} min={1} max={20} onChange={(n) => patch(i, { sets: n })} />
-              <Stepper label="Reps" value={e.reps} min={1} max={100} onChange={(n) => patch(i, { reps: n })} />
+              <Stepper label={tr("Sets")} value={e.sets} min={1} max={20} onChange={(n) => patch(i, { sets: n })} />
+              <Stepper label={tr("Reps")} value={e.reps} min={1} max={100} onChange={(n) => patch(i, { reps: n })} />
             </View>
           </View>
         ))}
         <Pressable accessibilityRole="button" onPress={() => setPicker(true)} style={styles.add}>
           <Feather name="plus" size={20} color={colors.text} />
-          <Text style={styles.addText}>Add exercise</Text>
+          <Text style={styles.addText}>{tr("Add exercise")}</Text>
         </Pressable>
       </ScrollView>
       <Pressable accessibilityRole="button" disabled={saving} onPress={save} style={styles.primary}>
-        <Text style={styles.primaryText}>{saving ? 'Saving…' : 'Save template'}</Text>
+        <Text style={styles.primaryText}>{saving ? tr("Saving…") : tr("Save template")}</Text>
       </Pressable>
       <ExerciseInfoModal name={info} onClose={() => setInfo(null)} />
       <ExercisePicker

@@ -11,6 +11,7 @@ import {
   fetchMyCredits,
   rpcRedeemInvite,
   rpcSetTheme,
+  rpcUnlockShadow,
   rpcSetUsername,
   type AppConfig,
   type CreditsData,
@@ -18,6 +19,7 @@ import {
   type WeeklyProgress,
 } from '../lib/credits';
 
+import { tr } from '../lib/i18n';
 const EMPTY_PROGRESS: WeeklyProgress = {
   qualifying_this_week: 0,
   goal: DEFAULT_CONFIG.weekly_goal,
@@ -49,13 +51,15 @@ type CreditsCtx = {
   /** Returns an error text or null. */
   setTheme: (id: ThemeId) => Promise<string | null>;
   setUsername: (name: string) => Promise<string | null>;
+  /** Secret gesture finished: unlock the hidden Shadow theme on the server and switch to it. Returns an error text or null. */
+  unlockShadow: () => Promise<string | null>;
   redeemInvite: (code: string) => Promise<string | null>;
 };
 
 const Ctx = createContext<CreditsCtx>(null as unknown as CreditsCtx);
 export const useCredits = () => useContext(Ctx);
 
-const isThemeId = (v: unknown): v is ThemeId => v === 'lime' || v === 'blue' || v === 'red' || v === 'purple' || v === 'gold';
+const isThemeId = (v: unknown): v is ThemeId => v === 'lime' || v === 'blue' || v === 'red' || v === 'purple' || v === 'gold' || v === 'shadow';
 const nameKey = (uid: string) => `credits.username.${uid}`;
 
 export function CreditsProvider({ children }: { children: React.ReactNode }) {
@@ -91,7 +95,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       const next = rest as CreditsData;
       const before = prevUnlocked.current;
       if (before) {
-        const gained = next.theme_unlocked.find((t) => !before.includes(t) && isThemeId(t) && t !== 'lime');
+        const gained = next.theme_unlocked.find((t) => !before.includes(t) && isThemeId(t) && t !== 'lime' && t !== 'shadow');
         if (gained && isThemeId(gained)) setUnlockedModal(gained);
       }
       prevUnlocked.current = next.theme_unlocked;
@@ -205,6 +209,13 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     [refresh],
   );
 
+  const unlockShadow = useCallback(async () => {
+    const res = await rpcUnlockShadow();
+    if (!res.ok) return describeCreditError(res.error);
+    await refresh();
+    return setTheme('shadow');
+  }, [refresh, setTheme]);
+
   const value = useMemo<CreditsCtx>(
     () => ({
       settled,
@@ -225,9 +236,10 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
       refresh,
       setTheme,
       setUsername,
+      unlockShadow,
       redeemInvite,
     }),
-    [settled, data, loading, error, cachedName, config, refresh, setTheme, setUsername, redeemInvite],
+    [settled, data, loading, error, cachedName, config, refresh, setTheme, setUsername, unlockShadow, redeemInvite],
   );
 
   return (
@@ -249,7 +261,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
 function UnlockModal({ theme, onClose, onSwitch }: { theme: ThemeId | null; onClose: () => void; onSwitch: () => void }) {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const label = theme === 'blue' ? 'Blue' : theme === 'red' ? 'Red' : theme === 'purple' ? 'Purple' : theme === 'gold' ? 'Gold' : theme ?? '';
+  const label = theme === 'blue' ? 'Blue' : theme === 'red' ? 'Red' : theme === 'purple' ? tr("Purple") : theme === 'gold' ? 'Gold' : theme ?? '';
   return (
     <Modal visible={!!theme} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>

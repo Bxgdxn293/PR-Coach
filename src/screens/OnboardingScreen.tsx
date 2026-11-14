@@ -12,6 +12,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { Goal, Level, RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const PRIVACY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
@@ -70,7 +71,7 @@ export function OnboardingScreen() {
   const submitAccount = async () => {
     setAccountError(null);
     if (!nameValid) {
-      setAccountError('Use 3 to 20 characters: letters, numbers and underscore.');
+      setAccountError(tr("Use 3 to 20 characters: letters, numbers and underscore."));
       return;
     }
     setBusy(true);
@@ -87,7 +88,7 @@ export function OnboardingScreen() {
     setNeedsAccount(false);
     if (inviteErr) {
       // not blocking: the account is ready, only the code was not applied
-      Alert.alert('Invite code not applied', inviteErr, [{ text: 'Continue', onPress: () => (usernameOnly ? finish() : undefined) }], {
+      Alert.alert(tr("Invite code not applied"), inviteErr, [{ text: tr("Continue"), onPress: () => (usernameOnly ? finish() : undefined) }], {
         onDismiss: () => (usernameOnly ? finish() : undefined),
       });
       return;
@@ -99,7 +100,7 @@ export function OnboardingScreen() {
     setBusy(true);
     const err = await save({ goal, level, days, focus });
     setBusy(false);
-    if (err) Alert.alert('Saved on this phone only', 'Your profile could not be synced yet. It will work offline; try again later.');
+    if (err) Alert.alert(tr("Saved on this phone only"), tr("Your profile could not be synced yet. It will work offline; try again later."));
     finish();
   };
 
@@ -110,13 +111,13 @@ export function OnboardingScreen() {
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Text accessibilityRole="header" style={styles.title}>
-              Pick a username
+              {tr("Pick a username")}
             </Text>
-            <Text style={styles.sub}>Friends find you by this name.</Text>
+            <Text style={styles.sub}>{tr("Friends find you by this name.")}</Text>
 
-            <Text style={styles.label}>USERNAME</Text>
+            <Text style={styles.label}>{tr("USERNAME")}</Text>
             <TextInput
-              accessibilityLabel="Username"
+              accessibilityLabel={tr("Username")}
               value={username}
               onChangeText={(t) => {
                 setUsername(t);
@@ -125,22 +126,22 @@ export function OnboardingScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               maxLength={20}
-              placeholder="e.g. iron_anna"
+              placeholder={tr("e.g. iron_anna")}
               placeholderTextColor={colors.muted}
               style={styles.input}
             />
-            <Text style={styles.hint}>3 to 20 characters: a-z, 0-9 and _</Text>
+            <Text style={styles.hint}>{tr("3 to 20 characters: a-z, 0-9 and _")}</Text>
             {accountError && <Text style={styles.error}>{accountError}</Text>}
 
-            <Text style={styles.label}>INVITE CODE (OPTIONAL)</Text>
+            <Text style={styles.label}>{tr("INVITE CODE (OPTIONAL)")}</Text>
             <TextInput
-              accessibilityLabel="Invite code"
+              accessibilityLabel={tr("Invite code")}
               value={invite}
               onChangeText={setInvite}
               autoCapitalize="characters"
               autoCorrect={false}
               maxLength={12}
-              placeholder="Got a code from a friend?"
+              placeholder={tr("Got a code from a friend?")}
               placeholderTextColor={colors.muted}
               style={styles.input}
             />
@@ -155,29 +156,25 @@ export function OnboardingScreen() {
                 {agreed && <Feather name="check" size={16} color={colors.onAccent} />}
               </View>
               <Text style={styles.agreeText}>
-                I agree to the{' '}
+                {tr("I agree to the")}{' '}
                 {TERMS_URL !== '' ? (
                   <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>
                     Terms
                   </Text>
-                ) : (
-                  'Terms'
-                )}{' '}
-                and{' '}
+                ) : (tr("Terms"))}{' '}
+                {tr("and")}{' '}
                 {PRIVACY_URL !== '' ? (
                   <Text accessibilityRole="link" style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>
                     Privacy Policy
                   </Text>
-                ) : (
-                  'Privacy Policy'
-                )}
+                ) : (tr("Privacy Policy"))}
                 .
               </Text>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
         <Pressable accessibilityRole="button" disabled={!canGo} onPress={submitAccount} style={[styles.cta, !canGo && { opacity: 0.5 }]}>
-          {busy ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ctaText}>Continue</Text>}
+          {busy ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ctaText}>{tr("Continue")}</Text>}
         </Pressable>
       </Screen>
     );
@@ -187,36 +184,36 @@ export function OnboardingScreen() {
     <Screen hideCredits>
       <ScrollView contentContainerStyle={styles.content}>
         <Text accessibilityRole="header" style={styles.title}>
-          Make it yours
+          {tr("Make it yours")}
         </Text>
-        <Text style={styles.sub}>Your plan adapts to your goal, level and schedule.</Text>
+        <Text style={styles.sub}>{tr("Your plan adapts to your goal, level and schedule.")}</Text>
 
-        <Text style={styles.label}>GOAL</Text>
+        <Text style={styles.label}>{tr("GOAL")}</Text>
         <View style={styles.row}>
           {GOALS.map((g) => (
-            <Chip key={g} label={g} on={goal === g} onPress={() => setGoal(g)} />
+            <Chip key={g} label={tr(g === 'Muscle' ? 'Build muscle' : g)} on={goal === g} onPress={() => setGoal(g)} />
           ))}
         </View>
 
-        <Text style={styles.label}>EXPERIENCE</Text>
+        <Text style={styles.label}>{tr("EXPERIENCE")}</Text>
         <View style={styles.row}>
           {LEVELS.map((l) => (
-            <Chip key={l} label={l} on={level === l} onPress={() => setLevel(l)} />
+            <Chip key={l} label={tr(l)} on={level === l} onPress={() => setLevel(l)} />
           ))}
         </View>
 
-        <Text style={styles.label}>DAYS PER WEEK</Text>
+        <Text style={styles.label}>{tr("DAYS PER WEEK")}</Text>
         <View style={styles.row}>
           {DAYS.map((d) => (
             <Chip key={d} label={String(d)} on={days === d} onPress={() => setDays(d)} round height={52} />
           ))}
         </View>
 
-        <Text style={styles.label}>LIFTS TO IMPROVE</Text>
+        <Text style={styles.label}>{tr("LIFTS TO IMPROVE")}</Text>
         <View style={styles.grid}>
           {LIFTS.map((l) => (
             <View key={l} style={styles.gridItem}>
-              <Chip label={l} on={focus.includes(l)} onPress={() => toggle(l)} height={52} />
+              <Chip label={tr(l)} on={focus.includes(l)} onPress={() => toggle(l)} height={52} />
             </View>
           ))}
         </View>
@@ -227,7 +224,7 @@ export function OnboardingScreen() {
         onPress={submit}
         style={[styles.cta, (busy || focus.length === 0) && { opacity: 0.5 }]}
       >
-        {busy ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ctaText}>Build my plan</Text>}
+        {busy ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ctaText}>{tr("Build my plan")}</Text>}
       </Pressable>
     </Screen>
   );

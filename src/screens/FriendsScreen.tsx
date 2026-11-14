@@ -33,6 +33,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const CONSENT_KEY = 'social.sharingConsent';
@@ -142,18 +143,18 @@ export function FriendsScreen() {
 
   return (
     <Screen>
-      <Header title="Friends" />
+      <Header title={tr("Friends")} />
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.accent} size="large" accessibilityLabel="Loading friends" />
+          <ActivityIndicator color={colors.accent} size="large" accessibilityLabel={tr("Loading friends")} />
         </View>
       ) : error && friends.length === 0 ? (
         <View style={styles.center}>
           <Feather name="wifi-off" size={32} color={colors.muted} />
-          <Text style={styles.emptyTitle}>Couldn't load friends</Text>
+          <Text style={styles.emptyTitle}>{tr("Couldn't load friends")}</Text>
           <Text style={styles.emptyText}>{error}</Text>
           <Pressable accessibilityRole="button" onPress={() => load('initial')} style={styles.primary}>
-            <Text style={styles.primaryText}>Retry</Text>
+            <Text style={styles.primaryText}>{tr("Retry")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -166,15 +167,13 @@ export function FriendsScreen() {
           <View style={styles.card}>
             <View style={styles.cardRow}>
               <View style={styles.flex}>
-                <Text style={styles.cardTitle}>Sharing</Text>
+                <Text style={styles.cardTitle}>{tr("Sharing")}</Text>
                 <Text style={styles.cardSub}>
-                  {sharing
-                    ? 'Friends can see your workouts, weights, records, streak and colour.'
-                    : 'Sharing is off. Friends only see your username, streak and colour.'}
+                  {sharing ? tr("Friends can see your workouts, weights, records, streak and colour.") : tr("Sharing is off. Friends only see your username, streak and colour.")}
                 </Text>
               </View>
               <Switch
-                accessibilityLabel="Share my workouts with friends"
+                accessibilityLabel={tr("Share my workouts with friends")}
                 value={!!sharing}
                 disabled={sharing === null || sharingBusy}
                 onValueChange={onToggle}
@@ -182,7 +181,7 @@ export function FriendsScreen() {
                 thumbColor="#ffffff"
               />
             </View>
-            {sharing === null && <Text style={styles.cardSub}>Couldn't read your sharing setting. Pull to refresh.</Text>}
+            {sharing === null && <Text style={styles.cardSub}>{tr("Couldn't read your sharing setting. Pull to refresh.")}</Text>}
           </View>
 
           {actionError && (
@@ -190,9 +189,9 @@ export function FriendsScreen() {
               {actionError}
             </Text>
           )}
-          {error && friends.length > 0 && <Text style={styles.errText}>Couldn't refresh: {error}</Text>}
+          {error && friends.length > 0 && <Text style={styles.errText}>{tr("Couldn't refresh: {0}", [error])}</Text>}
 
-          {incoming.length > 0 && <Text style={styles.section}>REQUESTS</Text>}
+          {incoming.length > 0 && <Text style={styles.section}>{tr("REQUESTS")}</Text>}
           {incoming.map((req) => {
             const busy = busyIds.includes(req.id);
             const name = req.username ?? 'Someone';
@@ -200,11 +199,11 @@ export function FriendsScreen() {
               <View key={req.id} style={styles.reqRow}>
                 <View style={styles.flex}>
                   <Text style={styles.rowName}>{name}</Text>
-                  <Text style={styles.rowSub}>wants to be your friend</Text>
+                  <Text style={styles.rowSub}>{tr("wants to be your friend")}</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Decline request from ${name}`}
+                  accessibilityLabel={tr("Decline request from {0}", [name])}
                   disabled={busy}
                   onPress={() => respond(req, false)}
                   style={[styles.iconBtn, busy && styles.dim]}
@@ -213,7 +212,7 @@ export function FriendsScreen() {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Accept request from ${name}`}
+                  accessibilityLabel={tr("Accept request from {0}", [name])}
                   disabled={busy}
                   onPress={() => respond(req, true)}
                   style={[styles.iconBtn, styles.iconBtnAccent, busy && styles.dim]}
@@ -224,12 +223,12 @@ export function FriendsScreen() {
             );
           })}
 
-          <Text style={styles.section}>YOUR FRIENDS</Text>
+          <Text style={styles.section}>{tr("YOUR FRIENDS")}</Text>
           {friends.length === 0 ? (
             <View style={styles.empty}>
               <Feather name="users" size={32} color={colors.muted} />
-              <Text style={styles.emptyTitle}>No friends yet</Text>
-              <Text style={styles.emptyText}>Add a friend by username or invite code and keep each other going.</Text>
+              <Text style={styles.emptyTitle}>{tr("No friends yet")}</Text>
+              <Text style={styles.emptyText}>{tr("Add a friend by username or invite code and keep each other going.")}</Text>
             </View>
           ) : (
             friends.map((f) => {
@@ -239,9 +238,7 @@ export function FriendsScreen() {
                   key={f.id}
                   accessibilityRole="button"
                   accessibilityLabel={
-                    f.share_enabled
-                      ? `${name}, ${f.streak_weeks} week streak, ${f.qualifying_this_week ?? 0} of ${WEEKLY_GOAL} workouts this week`
-                      : `${name}, ${f.streak_weeks} week streak, sharing is off`
+                    f.share_enabled ? tr("{0}, {1} week streak, {2} of {3} workouts this week", [name, f.streak_weeks, f.qualifying_this_week ?? 0, WEEKLY_GOAL]) : tr("{0}, {1} week streak, sharing is off", [name, f.streak_weeks])
                   }
                   onPress={() => openFriend(f)}
                   style={styles.row}
@@ -256,10 +253,10 @@ export function FriendsScreen() {
                     </View>
                     {f.share_enabled ? (
                       <Text style={styles.rowSub}>
-                        {f.qualifying_this_week ?? 0}/{WEEKLY_GOAL} this week · {timeAgo(f.last_workout_at)}
+                        {tr("{0}/{1} this week · {2}", [f.qualifying_this_week ?? 0, WEEKLY_GOAL, timeAgo(f.last_workout_at)])}
                       </Text>
                     ) : (
-                      <Text style={styles.rowSub}>Sharing is off</Text>
+                      <Text style={styles.rowSub}>{tr("Sharing is off")}</Text>
                     )}
                   </View>
                   <StreakBadge weeks={f.streak_weeks} />
@@ -271,15 +268,15 @@ export function FriendsScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Add friend"
+            accessibilityLabel={tr("Add friend")}
             onPress={() => navigation.navigate('AddFriend')}
             style={styles.primary}
           >
             <Feather name="user-plus" size={20} color={colors.onAccent} />
-            <Text style={styles.primaryText}>Add friend</Text>
+            <Text style={styles.primaryText}>{tr("Add friend")}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Blocked')} style={styles.link}>
-            <Text style={styles.linkText}>Blocked users</Text>
+            <Text style={styles.linkText}>{tr("Blocked users")}</Text>
           </Pressable>
         </ScrollView>
       )}
@@ -288,16 +285,16 @@ export function FriendsScreen() {
         <View style={styles.backdrop}>
           <View style={styles.sheet} accessibilityViewIsModal>
             <Text accessibilityRole="header" style={styles.sheetTitle}>
-              Share with friends?
+              {tr("Share with friends?")}
             </Text>
             <Text style={styles.sheetText}>
-              Friends can see your workouts, weights, records, streak and colour. You can turn this off any time.
+              {tr("Friends can see your workouts, weights, records, streak and colour. You can turn this off any time.")}
             </Text>
             <Pressable accessibilityRole="button" onPress={allow} style={styles.primary}>
-              <Text style={styles.primaryText}>Allow</Text>
+              <Text style={styles.primaryText}>{tr("Allow")}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => setConsent(false)} style={styles.secondary}>
-              <Text style={styles.secondaryText}>Not now</Text>
+              <Text style={styles.secondaryText}>{tr("Not now")}</Text>
             </Pressable>
           </View>
         </View>

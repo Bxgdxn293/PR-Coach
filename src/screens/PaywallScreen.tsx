@@ -9,6 +9,7 @@ import { usePremium } from '../context/PremiumContext';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 const PRIVACY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
 const TERMS_URL = process.env.EXPO_PUBLIC_TERMS_URL ?? '';
 
@@ -17,11 +18,11 @@ const FEATURES = ['AI Form Check for your lifts', 'Form Checks without credits',
 function packageLabel(p: PurchasesPackage): string {
   switch (p.packageType) {
     case 'MONTHLY':
-      return 'Monthly';
+      return tr("Monthly");
     case 'ANNUAL':
-      return 'Yearly';
+      return tr("Yearly");
     case 'LIFETIME':
-      return 'Lifetime';
+      return tr("Lifetime");
     default:
       return p.product.title;
   }
@@ -45,49 +46,49 @@ export function PaywallScreen() {
     setBusy(true);
     const err = await buy(current);
     setBusy(false);
-    if (err) Alert.alert('Purchase failed', err);
+    if (err) Alert.alert(tr("Purchase failed"), err);
   };
 
   const doRestore = async () => {
     setBusy(true);
     const err = await restore();
     setBusy(false);
-    if (err) Alert.alert('Restore', err);
+    if (err) Alert.alert(tr("Restore"), err);
   };
 
   return (
     <Screen hideCredits>
       <View style={styles.top}>
-        <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close" style={styles.close}>
+        <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={tr("Close")} style={styles.close}>
           <Feather name="x" size={22} color={colors.text} />
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
         {isPremium ? (
           <>
-            <Text style={styles.title}>You are Premium</Text>
-            <Text style={styles.lead}>Unlimited workouts are unlocked. Enjoy!</Text>
+            <Text style={styles.title}>{tr("You are Premium")}</Text>
+            <Text style={styles.lead}>{tr("Unlimited workouts are unlocked. Enjoy!")}</Text>
           </>
         ) : (
           <>
-            <Text style={styles.title}>Go Premium</Text>
+            <Text style={styles.title}>{tr("Go Premium")}</Text>
             <Text style={styles.lead}>
-              The free plan includes {FREE_WEEKLY_LIMIT} workouts per week. You have logged {weeklyCount} this week.
+              {tr("The free plan includes {0} workouts per week. You have logged {1} this week.", [FREE_WEEKLY_LIMIT, weeklyCount])}
             </Text>
             <View style={styles.features}>
-              {FEATURES.map((f) => (
+              {FEATURES.map((f0) => { const f = tr(f0); return (
                 <View key={f} style={styles.featureRow}>
                   <Feather name="check" size={20} color={colors.accent} />
                   <Text style={styles.feature}>{f}</Text>
                 </View>
-              ))}
+              ); })}
             </View>
 
             {!ready ? (
               <ActivityIndicator color={colors.accent} />
             ) : !configured || packages.length === 0 ? (
               <Text style={styles.note}>
-                Subscriptions are not available right now. Please try again later.
+                {tr("Subscriptions are not available right now. Please try again later.")}
               </Text>
             ) : (
               <View style={styles.packages}>
@@ -120,25 +121,23 @@ export function PaywallScreen() {
             accessibilityRole="button"
             style={[styles.cta, (busy || !current) && { opacity: 0.5 }]}
           >
-            <Text style={styles.ctaText}>{busy ? 'Please wait…' : 'Continue'}</Text>
+            <Text style={styles.ctaText}>{busy ? tr("Please wait…") : tr("Continue")}</Text>
           </Pressable>
           <Text style={styles.legal}>
-            Payment is charged to your App Store or Google Play account. Subscriptions renew automatically at the
-            price shown unless cancelled at least 24 hours before the end of the current period. Manage or cancel in
-            your store account settings.
+            {tr("Payment is charged to your App Store or Google Play account. Subscriptions renew automatically at the price shown unless cancelled at least 24 hours before the end of the current period. Manage or cancel in your store account settings.")}
           </Text>
           <View style={styles.links}>
             <Pressable onPress={doRestore} accessibilityRole="button" style={styles.link}>
-              <Text style={styles.linkText}>Restore</Text>
+              <Text style={styles.linkText}>{tr("Restore")}</Text>
             </Pressable>
             {TERMS_URL !== '' && (
               <Pressable onPress={() => Linking.openURL(TERMS_URL)} accessibilityRole="link" style={styles.link}>
-                <Text style={styles.linkText}>Terms</Text>
+                <Text style={styles.linkText}>{tr("Terms")}</Text>
               </Pressable>
             )}
             {PRIVACY_URL !== '' && (
               <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} accessibilityRole="link" style={styles.link}>
-                <Text style={styles.linkText}>Privacy</Text>
+                <Text style={styles.linkText}>{tr("Privacy")}</Text>
               </Pressable>
             )}
           </View>

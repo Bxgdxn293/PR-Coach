@@ -9,6 +9,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function FormResultScreen() {
@@ -24,7 +25,7 @@ export function FormResultScreen() {
 
   return (
     <Screen>
-      <Header title="Your Set" />
+      <Header title={tr("Your Set")} />
       <ScrollView contentContainerStyle={styles.list}>
         {frames[shownFrame] ? (
           <View style={styles.frame}>
@@ -32,7 +33,7 @@ export function FormResultScreen() {
               source={{ uri: frames[shownFrame] }}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
-              accessibilityLabel={`Frame from your ${exercise} set`}
+              accessibilityLabel={tr("Frame from your {0} set", [exercise])}
             />
             <View style={styles.caption}>
               <Text style={[styles.captionText, flagged && { color: colors.warn }]}>{caption}</Text>
@@ -46,7 +47,7 @@ export function FormResultScreen() {
             <Text style={styles.scoreOf}> / 100</Text>
           </Text>
           <Text style={styles.summary}>
-            {exercise}. {result.summary}
+            {tr(exercise)}. {result.summary}
           </Text>
         </View>
 
@@ -67,17 +68,16 @@ export function FormResultScreen() {
 
         {result.safety ? <Text style={styles.safety}>{result.safety}</Text> : null}
         <Text style={styles.disclaimer}>
-          AI feedback from a few still frames (confidence: {result.confidence}). It is a guide, not a replacement for a
-          qualified coach. Stop if something hurts.
+          {tr("AI feedback from a few still frames (confidence: {0}). It is a guide, not a replacement for a qualified coach. Stop if something hurts.", [tr(result.confidence)])}
         </Text>
       </ScrollView>
 
       <View style={styles.buttons}>
         <Pressable accessibilityRole="button" onPress={() => navigation.replace('FormCheck')} style={styles.secondary}>
-          <Text style={styles.secondaryText}>Record again</Text>
+          <Text style={styles.secondaryText}>{tr("Record again")}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={() => navigation.popToTop()} style={styles.primary}>
-          <Text style={styles.primaryText}>Done</Text>
+          <Text style={styles.primaryText}>{tr("Done")}</Text>
         </Pressable>
       </View>
     </Screen>

@@ -12,11 +12,12 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr, dateLocale } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' });
 }
 
 export function CreditsScreen() {
@@ -33,7 +34,7 @@ export function CreditsScreen() {
     if (!c.inviteCode) return;
     try {
       await Share.share({
-        message: `Join me on my fitness app! Use my invite code ${c.inviteCode} when you sign up and we both get a head start.`,
+        message: tr("Join me on my fitness app! Use my invite code {0} when you sign up and we both get a head start.", [c.inviteCode]),
       });
     } catch {
       // share sheet dismissed or unavailable
@@ -43,17 +44,17 @@ export function CreditsScreen() {
   if (!c.hasData) {
     return (
       <Screen hideCredits>
-        <Header title="Credits" />
+        <Header title={tr("Credits")} />
         <View style={styles.center}>
           {c.loading || !c.settled ? (
             <ActivityIndicator color={colors.accent} />
           ) : (
             <>
               <Feather name="wifi-off" size={40} color={colors.muted} />
-              <Text style={styles.centerTitle}>Could not load credits</Text>
-              <Text style={styles.muted}>{c.error ?? 'Check your connection and try again.'}</Text>
+              <Text style={styles.centerTitle}>{tr("Could not load credits")}</Text>
+              <Text style={styles.muted}>{c.error ?? tr("Check your connection and try again.")}</Text>
               <Pressable accessibilityRole="button" onPress={() => c.refresh()} style={styles.cta}>
-                <Text style={styles.ctaText}>Retry</Text>
+                <Text style={styles.ctaText}>{tr("Retry")}</Text>
               </Pressable>
             </>
           )}
@@ -66,66 +67,65 @@ export function CreditsScreen() {
 
   return (
     <Screen hideCredits>
-      <Header title="Credits" />
+      <Header title={tr("Credits")} />
       <ScrollView
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={c.loading} onRefresh={() => c.refresh()} tintColor={colors.accent} />}
       >
         {c.error && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{c.error} Showing your last known balance.</Text>
+            <Text style={styles.errorText}>{c.error} {tr("Showing your last known balance.")}</Text>
           </View>
         )}
 
         <View style={styles.balanceCard}>
-          <Text style={styles.cardLabel}>YOUR CREDITS</Text>
-          <Text accessibilityLabel={`${c.balance} credits`} style={styles.balance}>
+          <Text style={styles.cardLabel}>{tr("YOUR CREDITS")}</Text>
+          <Text accessibilityLabel={tr("{0} credits", [c.balance])} style={styles.balance}>
             {c.balance}
           </Text>
         </View>
 
         {!isPremium && (
           <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Paywall')} style={styles.premium}>
-            <Text style={styles.premiumText}>Go Premium · Form Checks without credits</Text>
+            <Text style={styles.premiumText}>{tr("Go Premium · Form Checks without credits")}</Text>
             <Feather name="arrow-right" size={20} color={colors.accent} />
           </Pressable>
         )}
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>This week</Text>
+          <Text style={styles.cardTitle}>{tr("This week")}</Text>
           <Text style={styles.big}>
-            {wp.qualifying_this_week} / {wp.goal} workouts this week → +{wp.bonus} credits
+            {tr("{0} / {1} workouts this week → +{2} credits", [wp.qualifying_this_week, wp.goal, wp.bonus])}
           </Text>
           <View style={styles.track}>
             <View style={[styles.fill, { width: `${pct}%` }]} />
           </View>
           <Text style={styles.muted}>
-            {wp.bonus_awarded ? 'Weekly bonus collected. Nice work!' : `A workout counts from ${minutes} minutes and ${cfg.qualify_min_sets} sets, one per day.`}
+            {wp.bonus_awarded ? tr("Weekly bonus collected. Nice work!") : tr("A workout counts from {0} minutes and {1} sets, one per day.", [minutes, cfg.qualify_min_sets])}
           </Text>
           <Text style={styles.muted}>
-            Streak: {c.streakWeeks} {c.streakWeeks === 1 ? 'week' : 'weeks'} in a row
+            {tr("Streak: {0} weeks in a row", [c.streakWeeks])}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>How to earn</Text>
+          <Text style={styles.cardTitle}>{tr("How to earn")}</Text>
           <Text style={styles.line}>
-            <Text style={styles.strong}>+{wp.bonus}</Text> for reaching {wp.goal} workouts in a week
+            <Text style={styles.strong}>+{wp.bonus}</Text> {tr("for reaching {0} workouts in a week", [wp.goal])}
           </Text>
           <Text style={styles.line}>
-            <Text style={styles.strong}>+{cfg.invite_reward}</Text> when a friend you invited completes {cfg.invite_reward_workouts} workouts
-            in their first {cfg.invite_reward_window_days} days
+            <Text style={styles.strong}>+{cfg.invite_reward}</Text> {tr("when a friend you invited completes {0} workouts in their first {1} days", [cfg.invite_reward_workouts, cfg.invite_reward_window_days])}
           </Text>
-          <Text style={styles.cardTitle}>How to spend</Text>
+          <Text style={styles.cardTitle}>{tr("How to spend")}</Text>
           <Text style={styles.line}>
-            <Text style={styles.strong}>{cfg.form_check_cost}</Text> per Form Check
+            <Text style={styles.strong}>{cfg.form_check_cost}</Text> {tr("per Form Check")}
           </Text>
-          <Text style={styles.muted}>Premium members do not need credits for Form Checks.</Text>
+          <Text style={styles.muted}>{tr("Premium members do not need credits for Form Checks.")}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Your invite code</Text>
-          <Text selectable accessibilityLabel={`Invite code ${c.inviteCode ?? ''}`} style={styles.code}>
+          <Text style={styles.cardTitle}>{tr("Your invite code")}</Text>
+          <Text selectable accessibilityLabel={tr("Invite code {0}", [c.inviteCode ?? ''])} style={styles.code}>
             {c.inviteCode ?? '--------'}
           </Text>
           <Pressable
@@ -134,17 +134,17 @@ export function CreditsScreen() {
             onPress={share}
             style={[styles.cta, !c.inviteCode && { opacity: 0.5 }]}
           >
-            <Text style={styles.ctaText}>Share code</Text>
+            <Text style={styles.ctaText}>{tr("Share code")}</Text>
           </Pressable>
           <Text style={styles.muted}>
-            Friends can enter it during sign-up, up to {cfg.invite_redeem_window_days} days after creating their account.
+            {tr("Friends can enter it during sign-up, up to {0} days after creating their account.", [cfg.invite_redeem_window_days])}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>History</Text>
+          <Text style={styles.cardTitle}>{tr("History")}</Text>
           {c.history.length === 0 ? (
-            <Text style={styles.muted}>No credit activity yet.</Text>
+            <Text style={styles.muted}>{tr("No credit activity yet.")}</Text>
           ) : (
             c.history.slice(0, 20).map((h) => (
               <View key={h.id} style={styles.histRow}>
@@ -161,7 +161,7 @@ export function CreditsScreen() {
           )}
         </View>
 
-        <Text style={styles.legal}>Credits have no cash value, cannot be bought or withdrawn.</Text>
+        <Text style={styles.legal}>{tr("Credits have no cash value, cannot be bought or withdrawn.")}</Text>
       </ScrollView>
     </Screen>
   );

@@ -1,3 +1,4 @@
+import './src/lib/webAlert';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -11,11 +12,13 @@ import { SettingsProvider } from './src/context/SettingsContext';
 import { DataProvider } from './src/context/DataContext';
 import { PremiumProvider } from './src/context/PremiumContext';
 import { CreditsProvider, useCredits } from './src/context/CreditsContext';
+import { useActiveWorkout } from './src/lib/activeWorkout';
 import { ProfileProvider, useProfile } from './src/context/ProfileContext';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { MenuScreen } from './src/screens/MenuScreen';
 import { WorkoutScreen } from './src/screens/WorkoutScreen';
 import { PRsScreen } from './src/screens/PRsScreen';
+import { ProgressScreen } from './src/screens/ProgressScreen';
 import { LibraryScreen } from './src/screens/LibraryScreen';
 import { TemplatesScreen } from './src/screens/TemplatesScreen';
 import { TemplateEditScreen } from './src/screens/TemplateEditScreen';
@@ -36,6 +39,7 @@ import { ThemesScreen } from './src/screens/ThemesScreen';
 import { ThemeProvider, useColors } from './src/context/ThemeContext';
 import type { RootStackParamList } from './src/types';
 
+import { tr } from './src/lib/i18n';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function Loading() {
@@ -51,16 +55,16 @@ function ConnectionError({ onRetry }: { onRetry: () => void }) {
   const colors = useColors();
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-      <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: 24, textAlign: 'center' }}>No connection</Text>
+      <Text style={{ color: colors.text, fontFamily: fonts.bold, fontSize: 24, textAlign: 'center' }}>{tr("No connection")}</Text>
       <Text style={{ color: colors.muted, fontFamily: fonts.medium, fontSize: 16, textAlign: 'center' }}>
-        We could not load your account. Check your internet and try again.
+        {tr("We could not load your account. Check your internet and try again.")}
       </Text>
       <Pressable
         accessibilityRole="button"
         onPress={onRetry}
         style={{ height: 56, paddingHorizontal: 32, borderRadius: 22, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}
       >
-        <Text style={{ color: colors.onAccent, fontFamily: fonts.bold, fontSize: 18 }}>Retry</Text>
+        <Text style={{ color: colors.onAccent, fontFamily: fonts.bold, fontSize: 18 }}>{tr("Retry")}</Text>
       </Pressable>
     </View>
   );
@@ -78,7 +82,8 @@ function Root() {
   const { user, loading } = useAuth();
   const { profile, loaded } = useProfile();
   const credits = useCredits();
-  if (loading || (user && (!loaded || !credits.settled))) return <Loading />;
+  const { loaded: activeLoaded } = useActiveWorkout(user?.id);
+  if (!activeLoaded || loading || (user && (!loaded || !credits.settled))) return <Loading />;
   if (!user) return <LoginScreen />;
   // The username is mandatory. Without one (and without a cached one) we cannot tell: ask to retry.
   if (!credits.username && !credits.hasData) return <ConnectionError onRetry={() => credits.refresh()} />;
@@ -89,6 +94,7 @@ function Root() {
         <Stack.Screen name="Menu" component={MenuScreen} />
         <Stack.Screen name="Workout" component={WorkoutScreen} options={{ gestureEnabled: false }} />
         <Stack.Screen name="PRs" component={PRsScreen} />
+        <Stack.Screen name="Progress" component={ProgressScreen} />
         <Stack.Screen name="Library" component={LibraryScreen} />
         <Stack.Screen name="Templates" component={TemplatesScreen} />
         <Stack.Screen name="TemplateEdit" component={TemplateEditScreen} />

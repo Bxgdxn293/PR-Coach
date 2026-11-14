@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import type { Profile } from '../types';
 
+import { tr } from '../lib/i18n';
 type ProfileCtx = {
   profile: Profile | null;
   loaded: boolean;
@@ -62,7 +63,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const save = useCallback(
     async (p: Profile) => {
-      if (!user) return 'Not signed in.';
+      if (!user) return tr("Not signed in.");
       setState({ userId: user.id, profile: p });
       AsyncStorage.setItem(cacheKey(user.id), JSON.stringify(p)).catch(() => {});
       const { error } = await supabase

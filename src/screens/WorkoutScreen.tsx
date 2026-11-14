@@ -4,9 +4,11 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Screen } from '../components/Screen';
-import { Header } from '../components/Header';
 import { FREE_WEEKLY_LIMIT, useData } from '../context/DataContext';
 import { usePremium } from '../context/PremiumContext';
+import { useAuth } from '../context/AuthContext';
+import { getActiveWorkout, setActiveWorkout, useActiveWorkout } from '../lib/activeWorkout';
+import { PRESET_TEMPLATES } from '../lib/presetTemplates';
 import { useSettings } from '../context/SettingsContext';
 import { WarmupModal } from '../components/WarmupModal';
 import { ExercisePicker } from '../components/ExercisePicker';
@@ -24,6 +26,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { DraftExercise, DraftSet, RootStackParamList, SavedExercise } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const REST_STEP = 15;
@@ -40,10 +43,23 @@ export function WorkoutScreen() {
   const navigation = useNavigation<Nav>();
   const params = useRoute<RouteProp<RootStackParamList, 'Workout'>>().params;
   const target = params && 'exercise' in params ? params : undefined;
-  const { templates, loaded: templatesLoaded, save: saveTemplate, touch: touchTemplate, remove: removeTemplate } = useTemplates();
+  const { templates, loaded: templatesLoaded, save: saveTemplate, touch: touchTemplate, remove: removeTemplate, presets, removePreset } = useTemplates();
   const startTemplateId = params && 'templateId' in params ? params.templateId : null;
   const session = params && 'session' in params ? params.session : undefined;
   const saved = templates.filter((x) => !x.once);
+  const allTemplates = useMemo(() => [...PRESET_TEMPLATES, ...templates], [templates]);
+  const { user } = useAuth();
+  const { loaded: activeLoaded } = useActiveWorkout(user?.id);
+  // Snapshot at open time (stays fixed while this screen keeps writing the workout back to storage).
+  const [mineActive] = useState(() => {
+    const a = getActiveWorkout();
+    return a && user && a.uid === user.id && a.drafts.length > 0 ? a : null;
+  });
+  // Opened from the menu banner (no params): continue the running workout. Opened to start something new while one
+  // is running: ask first (see the effect below).
+  const hasParams = !!params;
+  const resumeNow = !hasParams ? mineActive : null;
+  const [decision, setDecision] = useState<'pending' | 'done'>(hasParams && mineActive ? 'pending' : 'done');
   const { replaceAll: replaceGoals } = usePrGoals();
   const { notes, update: updateNote, persist: persistNotes } = useExerciseNotes();
   const { unit } = useSettings();
@@ -59,13 +75,15 @@ export function WorkoutScreen() {
     sets: [makeSet(name), makeSet(name), makeSet(name)],
   });
 
-  const [title, setTitle] = useState(session ? `${session.exercise} · ${session.title}` : target?.exercise ?? 'Workout');
+  const [title, setTitle] = useState(resumeNow ? resumeNow.title : session ? `${session.exercise} · ${session.title}` : target?.exercise ?? 'Workout');
   const [tplPicker, setTplPicker] = useState(false);
-  const [fromTemplate, setFromTemplate] = useState<string | null>(null);
-  const [fromTemplateId, setFromTemplateId] = useState<string | null>(null);
+  const [fromTemplate, setFromTemplate] = useState<string | null>(resumeNow?.fromTemplate ?? null);
+  const [fromTemplateId, setFromTemplateId] = useState<string | null>(resumeNow?.fromTemplateId ?? null);
   const appliedStart = useRef(false);
   const [drafts, setDrafts] = useState<DraftExercise[]>(() =>
-    session
+    resumeNow
+      ? resumeNow.drafts
+      : session
       ? [
           {
             name: session.exercise,
@@ -93,32 +111,55 @@ export function WorkoutScreen() {
   const [info, setInfo] = useState<string | null>(null);
   const [warm, setWarm] = useState<{ name: string; weight: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const startedAt = useRef(new Date());
+  const startedAt = useRef(new Date(resumeNow ? resumeNow.startedAt : Date.now()));
   // Set while/after saving: the weekly count rises with this very workout and must not trigger the paywall redirect.
   const finishing = useRef(false);
-  const leaving = useRef(false);
-  const hasProgress = drafts.some((ex) => ex.sets.some((s) => s.done));
-  // Back arrow / Android back button: ask before throwing away ticked sets.
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        if (!hasProgress || finishing.current || leaving.current) return;
-        e.preventDefault();
-        Alert.alert('Discard workout?', 'Your logged sets will be lost.', [
-          { text: 'Keep going', style: 'cancel' },
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              leaving.current = true;
-              navigation.dispatch(e.data.action);
-            },
+  // Set once the workout is saved or discarded: from then on nothing is written back to storage.
+  const ended = useRef(false);
+
+  // Started from the menu/templates while another workout runs: continue it or replace it.
+  useEffect(() => {
+    if (decision !== 'pending' || !mineActive) return;
+    Alert.alert(
+      tr("Workout already running"),
+      tr("\"{0}\" is still in progress. Continue it, or replace it with this one?", [mineActive.title]),
+      [
+        {
+          text: tr("Continue it"),
+          onPress: () => {
+            startedAt.current = new Date(mineActive.startedAt);
+            setTitle(mineActive.title);
+            setFromTemplate(mineActive.fromTemplate);
+            setFromTemplateId(mineActive.fromTemplateId);
+            setDrafts(mineActive.drafts);
+            appliedStart.current = true; // do not apply the requested template on top
+            setDecision('done');
           },
-        ]);
-      }),
-    [navigation, hasProgress],
-  );
-  const [elapsed, setElapsed] = useState(0);
+        },
+        { text: tr("Replace"), style: 'destructive', onPress: () => setDecision('done') },
+      ],
+      { cancelable: false },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep the running workout in storage: leaving the screen or closing the app must not lose it.
+  useEffect(() => {
+    if (decision === 'pending' || ended.current || !user || !activeLoaded) return;
+    if (drafts.length === 0) {
+      if (getActiveWorkout()) setActiveWorkout(null);
+      return;
+    }
+    setActiveWorkout({
+      uid: user.id,
+      title,
+      startedAt: startedAt.current.getTime(),
+      drafts,
+      fromTemplate,
+      fromTemplateId,
+    });
+  }, [decision, user, activeLoaded, title, drafts, fromTemplate, fromTemplateId]);
+  const [elapsed, setElapsed] = useState((Date.now() - startedAt.current.getTime()) / 1000);
 
   useEffect(() => {
     const id = setInterval(() => setElapsed((Date.now() - startedAt.current.getTime()) / 1000), 1000);
@@ -127,7 +168,7 @@ export function WorkoutScreen() {
 
   // Free plan: show the paywall instead of starting another workout once the weekly limit is used.
   useEffect(() => {
-    if (ready && !isPremium && !finishing.current && weeklyCount >= FREE_WEEKLY_LIMIT) {
+    if (ready && !isPremium && !finishing.current && !resumeNow && weeklyCount >= FREE_WEEKLY_LIMIT) {
       navigation.replace('Paywall');
     }
   }, [ready, isPremium, weeklyCount, navigation]);
@@ -192,9 +233,9 @@ export function WorkoutScreen() {
 
   const confirmApplyTemplate = (t: WorkoutTemplate) => {
     if (drafts.some((ex) => ex.sets.some((s) => s.done))) {
-      Alert.alert('Replace current workout?', 'Your ticked sets will be lost.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Replace', style: 'destructive', onPress: () => applyTemplate(t) },
+      Alert.alert(tr("Replace current workout?"), tr("Your ticked sets will be lost."), [
+        { text: tr("Cancel"), style: 'cancel' },
+        { text: tr("Replace"), style: 'destructive', onPress: () => applyTemplate(t) },
       ]);
     } else {
       applyTemplate(t);
@@ -203,17 +244,17 @@ export function WorkoutScreen() {
 
   // Started from the Templates screen: load that template as soon as the stored list is available.
   useEffect(() => {
-    if (!startTemplateId || appliedStart.current || !templatesLoaded) return;
+    if (!startTemplateId || appliedStart.current || !templatesLoaded || decision !== 'done') return;
     appliedStart.current = true;
-    const t = templates.find((x) => x.id === startTemplateId);
+    const t = allTemplates.find((x) => x.id === startTemplateId);
     if (t) applyTemplate(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startTemplateId, templatesLoaded, templates]);
+  }, [startTemplateId, templatesLoaded, allTemplates, decision]);
 
   const confirmRemoveTemplate = (t: WorkoutTemplate) =>
-    Alert.alert('Delete template?', `"${t.name}" will be removed from this device.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => removeTemplate(t.id) },
+    Alert.alert(tr("Delete template?"), tr("\"{0}\" will be removed from this device.", [t.name]), [
+      { text: tr("Cancel"), style: 'cancel' },
+      { text: tr("Delete"), style: 'destructive', onPress: () => (t.preset ? removePreset(t.id) : removeTemplate(t.id)) },
     ]);
 
   const finish = async () => {
@@ -227,7 +268,7 @@ export function WorkoutScreen() {
       .filter((ex) => ex.sets.length > 0);
 
     if (entries.length === 0) {
-      Alert.alert('Nothing logged', 'Tick at least one set before finishing the workout.');
+      Alert.alert(tr("Nothing logged"), tr("Tick at least one set before finishing the workout."));
       return;
     }
     setSaving(true);
@@ -240,13 +281,18 @@ export function WorkoutScreen() {
     });
     setSaving(false);
     if (err) finishing.current = false;
+    else {
+      ended.current = true; // saved: the running workout is over
+      setActiveWorkout(null);
+    }
     if (err?.includes('free_limit_reached')) {
       navigation.replace('Paywall');
     } else if (err) {
-      Alert.alert('Could not save workout', err);
+      Alert.alert(tr("Could not save workout"), err);
     } else {
+      const fromPreset = !!fromTemplateId && !!PRESET_TEMPLATES.find((x) => x.id === fromTemplateId);
       const fromOnce = !!fromTemplateId && !!templates.find((x) => x.id === fromTemplateId)?.once;
-      if (fromTemplateId) await (fromOnce ? removeTemplate(fromTemplateId) : touchTemplate(fromTemplateId));
+      if (fromTemplateId && !fromPreset) await (fromOnce ? removeTemplate(fromTemplateId) : touchTemplate(fromTemplateId));
       // A logged single above a goal's current max is a new 1-rep max for that goal.
       let hits: { exercise: string; kg: number; reached: boolean }[] = [];
       await replaceGoals((list) => {
@@ -255,7 +301,7 @@ export function WorkoutScreen() {
         return res.goals;
       });
       const proceed = async () => {
-      if (fromOnce) {
+      if (fromOnce || fromPreset) {
         navigation.navigate('Menu');
         return;
       }
@@ -264,27 +310,23 @@ export function WorkoutScreen() {
       if (!canSaveTemplate(saved, name, isPremium)) {
         const limit = isPremium ? PREMIUM_TEMPLATE_LIMIT : FREE_TEMPLATE_LIMIT;
         Alert.alert(
-          'Template limit reached',
-          isPremium
-            ? `You can keep up to ${limit} templates. Delete one to save a new one.`
-            : `The free plan keeps ${limit} templates. Delete one in the Templates list, or upgrade to Premium for up to ${PREMIUM_TEMPLATE_LIMIT}.`,
+          tr("Template limit reached"),
+          isPremium ? tr("You can keep up to {0} templates. Delete one to save a new one.", [limit]) : tr("The free plan keeps {0} templates. Delete one in the Templates list, or upgrade to Premium for up to {1}.", [limit, PREMIUM_TEMPLATE_LIMIT]),
           [
-            { text: 'Not now', style: 'cancel', onPress: () => navigation.navigate('Menu') },
-            ...(isPremium ? [] : [{ text: 'See Premium', onPress: () => navigation.replace('Paywall') }]),
+            { text: tr("Not now"), style: 'cancel', onPress: () => navigation.navigate('Menu') },
+            ...(isPremium ? [] : [{ text: tr("See Premium"), onPress: () => navigation.replace('Paywall') }]),
           ],
           { cancelable: false },
         );
         return;
       }
       Alert.alert(
-        exists ? 'Update template?' : 'Save as template?',
-        exists
-          ? `Replace the template "${name}" with this workout.`
-          : `Next time you can start "${name}" with one tap instead of building it again.`,
+        exists ? tr("Update template?") : tr("Save as template?"),
+        exists ? tr("Replace the template \"{0}\" with this workout.", [name]) : tr("Next time you can start \"{0}\" with one tap instead of building it again.", [name]),
         [
-          { text: 'Not now', style: 'cancel', onPress: () => navigation.navigate('Menu') },
+          { text: tr("Not now"), style: 'cancel', onPress: () => navigation.navigate('Menu') },
           {
-            text: exists ? 'Update' : 'Save',
+            text: exists ? tr("Update") : tr("Save"),
             onPress: async () => {
               await saveTemplate(name, templateFromEntries(entries));
               navigation.navigate('Menu');
@@ -297,11 +339,9 @@ export function WorkoutScreen() {
       if (hits.length > 0) {
         const h = hits[0];
         Alert.alert(
-          h.reached ? 'Goal reached!' : 'New 1-rep max!',
-          h.reached
-            ? `${h.exercise}: ${toDisplay(h.kg, unit)} ${unit}. You hit your goal. Raise it in PR Coach.`
-            : `${h.exercise}: ${toDisplay(h.kg, unit)} ${unit}. Your plan now uses this as your max.`,
-          [{ text: 'Nice', onPress: () => void proceed() }],
+          h.reached ? tr("Goal reached!") : tr("New 1-rep max!"),
+          h.reached ? tr("{0}: {1} {2}. You hit your goal. Raise it in PR Coach.", [h.exercise, toDisplay(h.kg, unit), unit]) : tr("{0}: {1} {2}. Your plan now uses this as your max.", [h.exercise, toDisplay(h.kg, unit), unit]),
+          [{ text: tr("Nice"), onPress: () => void proceed() }],
           { cancelable: false },
         );
       } else {
@@ -311,13 +351,14 @@ export function WorkoutScreen() {
   };
 
   const confirmDiscard = () =>
-    Alert.alert('Discard workout?', 'Your logged sets will be lost.', [
-      { text: 'Keep going', style: 'cancel' },
+    Alert.alert(tr("Discard workout?"), tr("This workout and everything you logged will be deleted."), [
+      { text: tr("Keep going"), style: 'cancel' },
       {
-        text: 'Discard',
+        text: tr("Discard"),
         style: 'destructive',
         onPress: () => {
-          leaving.current = true;
+          ended.current = true;
+          setActiveWorkout(null);
           navigation.goBack();
         },
       },
@@ -325,34 +366,41 @@ export function WorkoutScreen() {
 
   return (
     <Screen>
-      <Header title="Workout" />
-      <View style={styles.timerCard}>
-        <View style={styles.flex}>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            accessibilityLabel="Workout name"
-            style={styles.titleInput}
-            placeholder="Workout name"
-            placeholderTextColor={colors.muted}
-            maxLength={40}
-          />
-          <Text style={styles.timer}>{formatClock(elapsed)}</Text>
-        </View>
-        <Pressable onPress={confirmDiscard} accessibilityRole="button" accessibilityLabel="Discard workout" style={styles.discard}>
-          <Feather name="x" size={20} color={colors.text} />
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Menu'))}
+          accessibilityRole="button"
+          accessibilityLabel={tr("Back to menu, the workout keeps running")}
+          style={styles.smallBtn}
+        >
+          <Feather name="chevron-left" size={22} color={colors.text} />
+        </Pressable>
+        <TextInput
+          value={title}
+          onChangeText={setTitle}
+          accessibilityLabel={tr("Workout name")}
+          style={styles.titleInput}
+          placeholder={tr("Workout name")}
+          placeholderTextColor={colors.muted}
+          maxLength={40}
+        />
+        <Text style={styles.timer} accessibilityLabel={tr("Training time {0}", [formatClock(elapsed)])}>
+          {formatClock(elapsed)}
+        </Text>
+        <Pressable onPress={confirmDiscard} accessibilityRole="button" accessibilityLabel={tr("Discard workout")} style={styles.smallBtn}>
+          <Feather name="x" size={18} color={colors.text} />
         </Pressable>
       </View>
 
       <Pressable
         onPress={() => setTplPicker(true)}
         accessibilityRole="button"
-        accessibilityLabel={`Templates, ${saved.length} saved`}
+        accessibilityLabel={tr("Templates, {0} saved", [saved.length])}
         style={styles.tplBtn}
       >
         <Feather name="bookmark" size={18} color={colors.accent} />
         <Text style={styles.tplBtnText}>
-          {fromTemplate ? `Template: ${fromTemplate}` : saved.length > 0 ? `Start from a template (${saved.length})` : 'Templates'}
+          {fromTemplate ? tr("Template: {0}", [fromTemplate]) : saved.length > 0 ? tr("Start from a template ({0})", [saved.length]) : tr("Templates")}
         </Text>
         <Feather name="chevron-down" size={18} color={colors.muted} />
       </Pressable>
@@ -363,7 +411,7 @@ export function WorkoutScreen() {
           return (
             <View key={`${ex.name}-${ei}`} style={styles.card}>
               <View style={styles.cardHead}>
-                <Text style={[styles.exName, styles.flex]}>{ex.name}</Text>
+                <Text style={[styles.exName, styles.flex]}>{tr(ex.name)}</Text>
                 <ExerciseMini name={ex.name} onPress={() => setInfo(ex.name)} height={46} />
                 {isBarbell(ex.name) && (
                   <Pressable
@@ -372,16 +420,16 @@ export function WorkoutScreen() {
                       setWarm({ name: ex.name, weight: top > 0 ? String(top) : '' });
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Warm-up and plates for ${ex.name}`}
+                    accessibilityLabel={tr("Warm-up and plates for {0}", [ex.name])}
                     style={styles.warmBtn}
                   >
-                    <Text style={styles.warmBtnText}>Warm-up &amp; plates</Text>
+                    <Text style={styles.warmBtnText}>{tr("Warm-up & plates")}</Text>
                   </Pressable>
                 )}
                 <Pressable
                   onPress={() => removeExercise(ei)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${ex.name}`}
+                  accessibilityLabel={tr("Remove {0}", [ex.name])}
                   style={styles.iconBtn}
                 >
                   <Feather name="trash-2" size={18} color={colors.muted} />
@@ -393,8 +441,8 @@ export function WorkoutScreen() {
                   value={notes[ex.name] ?? ''}
                   onChangeText={(v) => updateNote(ex.name, v)}
                   onBlur={() => void persistNotes()}
-                  accessibilityLabel={`Note for ${ex.name}`}
-                  placeholder="Note (seat, grip, cue…)"
+                  accessibilityLabel={tr("Note for {0}", [ex.name])}
+                  placeholder={tr("Note (seat, grip, cue…)")}
                   placeholderTextColor={colors.muted}
                   maxLength={NOTE_MAX}
                   multiline
@@ -402,10 +450,10 @@ export function WorkoutScreen() {
                 />
               </View>
               <View style={styles.row}>
-                <Text style={[styles.th, styles.colSet]}>SET</Text>
-                <Text style={[styles.th, styles.flex]}>PREVIOUS</Text>
+                <Text style={[styles.th, styles.colSet]}>{tr("SET")}</Text>
+                <Text style={[styles.th, styles.flex]}>{tr("PREVIOUS")}</Text>
                 <Text style={[styles.th, styles.colInput]}>{unit.toUpperCase()}</Text>
-                <Text style={[styles.th, styles.colInput]}>REPS</Text>
+                <Text style={[styles.th, styles.colInput]}>{tr("REPS")}</Text>
                 <View style={styles.colCheck} />
                 <View style={{ width: 30 }} />
               </View>
@@ -422,7 +470,8 @@ export function WorkoutScreen() {
                     value={s.kg}
                     onChangeText={(t) => patchSet(ei, si, { kg: t })}
                     keyboardType="decimal-pad"
-                    accessibilityLabel={`${ex.name} set ${si + 1} weight`}
+                    selectTextOnFocus
+                    accessibilityLabel={tr("{0} set {1} weight", [ex.name, si + 1])}
                     placeholder="0"
                     placeholderTextColor={colors.muted}
                   />
@@ -431,7 +480,8 @@ export function WorkoutScreen() {
                     value={s.reps}
                     onChangeText={(t) => patchSet(ei, si, { reps: t })}
                     keyboardType="number-pad"
-                    accessibilityLabel={`${ex.name} set ${si + 1} reps`}
+                    selectTextOnFocus
+                    accessibilityLabel={tr("{0} set {1} reps", [ex.name, si + 1])}
                     placeholder="0"
                     placeholderTextColor={colors.muted}
                   />
@@ -439,7 +489,7 @@ export function WorkoutScreen() {
                     onPress={() => patchSet(ei, si, s.done ? { done: false, rest: undefined } : { done: true, rest: { total: lastRestTotal, startedAt: Date.now() } })}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: s.done }}
-                    accessibilityLabel={`${ex.name} set ${si + 1} done`}
+                    accessibilityLabel={tr("{0} set {1} done", [ex.name, si + 1])}
                     style={[styles.check, s.done && { backgroundColor: colors.accent }]}
                   >
                     <Feather name="check" size={18} color={s.done ? colors.onAccent : colors.muted} />
@@ -447,7 +497,7 @@ export function WorkoutScreen() {
                   <Pressable
                     onPress={() => removeSet(ei, si)}
                     accessibilityRole="button"
-                    accessibilityLabel={`${ex.name} delete set ${si + 1}`}
+                    accessibilityLabel={tr("{0} delete set {1}", [ex.name, si + 1])}
                     hitSlop={6}
                     style={styles.delSet}
                   >
@@ -461,18 +511,18 @@ export function WorkoutScreen() {
                   const pct = Math.min(1, passed / s.rest.total);
                   const over = passed >= s.rest.total;
                   return (
-                    <View style={styles.restBox} accessibilityLabel={over ? `Rest done, ${clock(s.rest.total)}` : `Rest, ${clock(left)} left`}>
+                    <View style={styles.restBox} accessibilityLabel={over ? tr("Rest done, {0}", [clock(s.rest.total)]) : tr("Rest, {0} left", [clock(left)])}>
                       <View style={styles.restTrack}>
                         <View style={[styles.restFill, { width: `${pct * 100}%` }]} />
                       </View>
                       <View style={styles.restRow}>
                         <Text style={[styles.restText, over && { color: colors.accent }]}>
-                          {over ? `Rest done · ${clock(s.rest.total)}` : `Rest ${clock(left)} / ${clock(s.rest.total)}`}
+                          {over ? tr("Rest done · {0}", [clock(s.rest.total)]) : tr("Rest {0} / {1}", [clock(left), clock(s.rest.total)])}
                         </Text>
                         <Pressable
                           onPress={() => changeRest(ei, si, -REST_STEP)}
                           accessibilityRole="button"
-                          accessibilityLabel="Rest 15 seconds shorter"
+                          accessibilityLabel={tr("Rest 15 seconds shorter")}
                           hitSlop={8}
                           style={styles.restBtn}
                         >
@@ -481,7 +531,7 @@ export function WorkoutScreen() {
                         <Pressable
                           onPress={() => changeRest(ei, si, REST_STEP)}
                           accessibilityRole="button"
-                          accessibilityLabel="Rest 15 seconds longer"
+                          accessibilityLabel={tr("Rest 15 seconds longer")}
                           hitSlop={8}
                           style={styles.restBtn}
                         >
@@ -495,20 +545,19 @@ export function WorkoutScreen() {
               ))}
               <Pressable onPress={() => addSet(ei)} accessibilityRole="button" style={styles.addSet}>
                 <Feather name="plus" size={18} color={colors.accent} />
-                <Text style={styles.addSetText}>Add set</Text>
+                <Text style={styles.addSetText}>{tr("Add set")}</Text>
               </Pressable>
             </View>
           );
         })}
         <Pressable onPress={() => setPicker(true)} accessibilityRole="button" style={styles.addExercise}>
           <Feather name="plus" size={20} color={colors.text} />
-          <Text style={styles.addExerciseText}>Add exercise</Text>
+          <Text style={styles.addExerciseText}>{tr("Add exercise")}</Text>
+        </Pressable>
+        <Pressable onPress={finish} disabled={saving} accessibilityRole="button" style={styles.finish}>
+          <Text style={styles.finishText}>{saving ? tr("Saving…") : tr("Finish Workout")}</Text>
         </Pressable>
       </ScrollView>
-
-      <Pressable onPress={finish} disabled={saving} accessibilityRole="button" style={styles.finish}>
-        <Text style={styles.finishText}>{saving ? 'Saving…' : 'Finish Workout'}</Text>
-      </Pressable>
 
       <WarmupModal
         visible={warm !== null}
@@ -521,21 +570,17 @@ export function WorkoutScreen() {
       <Modal visible={tplPicker} animationType="slide" onRequestClose={() => setTplPicker(false)}>
         <Screen hideCredits>
           <View style={styles.pickerHead}>
-            <Text style={styles.pickerTitle}>Templates</Text>
+            <Text style={styles.pickerTitle}>{tr("Templates")}</Text>
             <Text style={styles.meta}>
               {saved.length}/{isPremium ? PREMIUM_TEMPLATE_LIMIT : FREE_TEMPLATE_LIMIT}
             </Text>
-            <Pressable onPress={() => setTplPicker(false)} accessibilityRole="button" accessibilityLabel="Close" style={styles.discard}>
+            <Pressable onPress={() => setTplPicker(false)} accessibilityRole="button" accessibilityLabel={tr("Close")} style={styles.discard}>
               <Feather name="x" size={20} color={colors.text} />
             </Pressable>
           </View>
-          {saved.length === 0 ? (
-            <Text style={styles.meta}>
-              No templates yet. Build a workout, finish it and choose "Save as template" - it shows up here.
-            </Text>
-          ) : (
+          {(
             <FlatList
-              data={saved}
+              data={[...presets, ...saved]}
               keyExtractor={(t) => t.id}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ gap: 10 }}
@@ -543,32 +588,34 @@ export function WorkoutScreen() {
                 <View style={styles.pickRow}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Start ${item.name}`}
+                    accessibilityLabel={tr("Start {0}", [item.name])}
                     style={styles.flex}
                     onPress={() => confirmApplyTemplate(item)}
                   >
                     <Text style={styles.exName}>{item.name}</Text>
                     <Text style={styles.meta}>
-                      {item.exercises.length} exercises · {item.exercises.reduce((n, e) => n + e.sets, 0)} sets
+                      {item.preset ? tr("Built-in · ") : ''}{tr("Exercises: {0} · Sets: {1}", [item.exercises.length, item.exercises.reduce((n, e) => n + e.sets, 0)])}
                     </Text>
                     <Text style={styles.meta} numberOfLines={1}>
-                      {item.exercises.map((e) => e.name).join(', ')}
+                      {item.exercises.map((e) => tr(e.name)).join(', ')}
                     </Text>
                   </Pressable>
+                  {!item.preset && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={tr("Edit template {0}", [item.name])}
+                      onPress={() => {
+                        setTplPicker(false);
+                        navigation.navigate('TemplateEdit', { id: item.id });
+                      }}
+                      style={styles.iconBtn}
+                    >
+                      <Feather name="edit-2" size={18} color={colors.muted} />
+                    </Pressable>
+                  )}
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`Edit template ${item.name}`}
-                    onPress={() => {
-                      setTplPicker(false);
-                      navigation.navigate('TemplateEdit', { id: item.id });
-                    }}
-                    style={styles.iconBtn}
-                  >
-                    <Feather name="edit-2" size={18} color={colors.muted} />
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete template ${item.name}`}
+                    accessibilityLabel={tr("Delete template {0}", [item.name])}
                     onPress={() => confirmRemoveTemplate(item)}
                     style={styles.iconBtn}
                   >
@@ -597,18 +644,19 @@ export function WorkoutScreen() {
 const makeStyles = (colors: Palette) =>
   StyleSheet.create({
   flex: { flex: 1 },
-  timerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: colors.card,
+  topBar: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleInput: { flex: 1, color: colors.text, fontFamily: fonts.bold, fontSize: 15, padding: 0, height: 36 },
+  timer: { color: colors.accent, fontFamily: fonts.bold, fontSize: 16, minWidth: 52, textAlign: 'right' },
+  smallBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.cardAlt,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  titleInput: { color: colors.muted, fontFamily: fonts.medium, fontSize: 14, letterSpacing: 1, padding: 0, height: 24 },
-  timer: { color: colors.accent, fontFamily: fonts.bold, fontSize: 40, letterSpacing: -1 },
   discard: {
     width: 44,
     height: 44,
@@ -619,7 +667,7 @@ const makeStyles = (colors: Palette) =>
     alignItems: 'center',
     justifyContent: 'center',
   },
-  list: { gap: 12, paddingBottom: 8 },
+  list: { gap: 12, paddingBottom: 24 },
   card: {
     borderRadius: 24,
     padding: 12,
@@ -694,14 +742,14 @@ const makeStyles = (colors: Palette) =>
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    minHeight: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
+    minHeight: 38,
+    borderRadius: 19,
+    paddingHorizontal: 14,
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tplBtnText: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 15 },
+  tplBtnText: { flex: 1, color: colors.text, fontFamily: fonts.medium, fontSize: 14 },
   pickerHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   pickerTitle: { color: colors.text, fontFamily: fonts.bold, fontSize: 28 },
   pickRow: {

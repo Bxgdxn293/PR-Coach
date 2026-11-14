@@ -4,12 +4,13 @@ import { Feather } from '@expo/vector-icons';
 import { fonts, type Palette } from '../theme';
 import { paletteFor, useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 /** Small circle in the friend's accent colour. */
 export function ColorDot({ theme, size = 14 }: { theme: string; size?: number }) {
   const accent = paletteFor(theme).accent;
   return (
     <View
-      accessibilityLabel={`Accent colour ${theme}`}
+      accessibilityLabel={tr("Accent colour {0}", [theme])}
       style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: accent }}
     />
   );
@@ -23,7 +24,7 @@ export function StreakBadge({ weeks }: { weeks: number }) {
   return (
     <View
       style={[styles.badge, on && styles.badgeOn]}
-      accessibilityLabel={`${weeks} week streak`}
+      accessibilityLabel={tr("{0} week streak", [weeks])}
     >
       <Feather name="zap" size={13} color={on ? colors.onAccent : colors.muted} />
       <Text style={[styles.badgeText, on && styles.badgeTextOn]}>{weeks}</Text>
@@ -36,7 +37,7 @@ export function ThemeBadge({ theme }: { theme: string }) {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const text =
-    theme === 'purple' ? '1 year streak' : theme === 'red' ? '6 month streak' : theme === 'blue' ? '1 month streak' : theme === 'gold' ? '100 kg bench' : null;
+    theme === 'purple' ? tr("1 year streak") : theme === 'red' ? tr("6 month streak") : theme === 'blue' ? tr("1 month streak") : theme === 'gold' ? tr("100 kg bench") : theme === 'shadow' ? tr("Secret theme") : null;
   if (!text) return null;
   return (
     <View style={styles.month} accessibilityLabel={text}>

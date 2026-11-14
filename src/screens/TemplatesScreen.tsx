@@ -11,6 +11,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /** First stop after "Workout": pick today's template (with when it was last used) or start empty. */
@@ -19,7 +20,7 @@ export function TemplatesScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<Nav>();
   const { isPremium } = usePremium();
-  const { templates, loaded, remove } = useTemplates();
+  const { templates, presets, loaded, remove, removePreset } = useTemplates();
   const limit = isPremium ? PREMIUM_TEMPLATE_LIMIT : FREE_TEMPLATE_LIMIT;
   const savedCount = templates.filter((t) => !t.once).length;
   const full = savedCount >= limit;
@@ -27,22 +28,20 @@ export function TemplatesScreen() {
   // Most recently used first, never-used ones after, by name.
   const sorted = useMemo(
     () =>
-      [...templates].sort((a, b) => {
+      [...presets, ...[...templates].sort((a, b) => {
         const ta = a.last_used_at ? Date.parse(a.last_used_at) : 0;
         const tb = b.last_used_at ? Date.parse(b.last_used_at) : 0;
         return tb - ta || a.name.localeCompare(b.name);
-      }),
-    [templates],
+      })],
+    [templates, presets],
   );
 
   const newTemplate = () => {
     if (full) {
       Alert.alert(
-        'Template limit reached',
-        isPremium
-          ? `You can keep up to ${limit} templates. Delete one first.`
-          : `The free plan keeps ${limit} templates. Delete one, or upgrade to Premium for up to ${PREMIUM_TEMPLATE_LIMIT}.`,
-        isPremium ? [{ text: 'OK' }] : [{ text: 'Not now', style: 'cancel' }, { text: 'See Premium', onPress: () => navigation.navigate('Paywall') }],
+        tr("Template limit reached"),
+        isPremium ? tr("You can keep up to {0} templates. Delete one first.", [limit]) : tr("The free plan keeps {0} templates. Delete one, or upgrade to Premium for up to {1}.", [limit, PREMIUM_TEMPLATE_LIMIT]),
+        isPremium ? [{ text: tr("OK") }] : [{ text: tr("Not now"), style: 'cancel' }, { text: tr("See Premium"), onPress: () => navigation.navigate('Paywall') }],
       );
       return;
     }
@@ -50,16 +49,16 @@ export function TemplatesScreen() {
   };
 
   const confirmDelete = (t: WorkoutTemplate) =>
-    Alert.alert('Delete template?', `"${t.name}" will be removed from this device.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => remove(t.id) },
+    Alert.alert(tr("Delete template?"), tr("\"{0}\" will be removed from this device.", [t.name]), [
+      { text: tr("Cancel"), style: 'cancel' },
+      { text: tr("Delete"), style: 'destructive', onPress: () => (t.preset ? removePreset(t.id) : remove(t.id)) },
     ]);
 
   return (
     <Screen>
-      <Header title="Workout" />
+      <Header title={tr("Workout")} />
       <Text style={styles.sub}>
-        Choose today's template · {savedCount}/{limit}
+        {tr("Choose today's template ·")} {savedCount}/{limit}
       </Text>
       <FlatList
         data={sorted}
@@ -67,31 +66,27 @@ export function TemplatesScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          loaded ? (
-            <Text style={styles.empty}>
-              Every workout starts from a template. Create your first one: pick the exercises, sets and reps once, then start it with one tap whenever you train.
-            </Text>
-          ) : null
+          null
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Start ${item.name}. ${lastUsedLabel(item.last_used_at)}`}
+              accessibilityLabel={tr("Start {0}. {1}", [item.name, lastUsedLabel(item.last_used_at)])}
               style={styles.flex}
               onPress={() => navigation.navigate('Workout', { templateId: item.id })}
             >
               <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.used}>{item.once ? 'Coach · one time' : lastUsedLabel(item.last_used_at)}</Text>
+              <Text style={styles.used}>{item.preset ? tr("Built-in") : item.once ? tr("Coach · one time") : lastUsedLabel(item.last_used_at)}</Text>
               <Text style={styles.meta} numberOfLines={1}>
-                {item.exercises.length} exercises · {item.exercises.reduce((n, e) => n + e.sets, 0)} sets ·{' '}
-                {item.exercises.map((e) => e.name).join(', ')}
+                {tr("Exercises: {0} · Sets: {1} ·", [item.exercises.length, item.exercises.reduce((n, e) => n + e.sets, 0)])}{' '}
+                {item.exercises.map((e) => tr(e.name)).join(', ')}
               </Text>
             </Pressable>
-            {!item.once && (
+            {!item.once && !item.preset && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Edit template ${item.name}`}
+                accessibilityLabel={tr("Edit template {0}", [item.name])}
                 onPress={() => navigation.navigate('TemplateEdit', { id: item.id })}
                 style={styles.iconBtn}
               >
@@ -100,7 +95,7 @@ export function TemplatesScreen() {
             )}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Delete template ${item.name}`}
+              accessibilityLabel={tr("Delete template {0}", [item.name])}
               onPress={() => confirmDelete(item)}
               style={styles.iconBtn}
             >
@@ -111,7 +106,7 @@ export function TemplatesScreen() {
       />
       <Pressable accessibilityRole="button" onPress={newTemplate} style={styles.primary}>
         <Feather name="plus" size={22} color={colors.onAccent} />
-        <Text style={styles.primaryText}>New template</Text>
+        <Text style={styles.primaryText}>{tr("New template")}</Text>
       </Pressable>
     </Screen>
   );

@@ -156,3 +156,13 @@ The whole PR Coach (Coach, PrGoal, PrGoalEdit screens) is Premium-only (`FREE_GO
 
 ## Web test version for friends (Premium unlocked)
 See `launch/WEB_TEST_BUILD.md`. Untested; `scripts/patch-web.js` adds home-screen metadata after `expo export`.
+
+## Running workout, built-in templates
+- `src/lib/activeWorkout.ts`: the running workout is kept in storage. Leaving the Workout screen or closing the app does not end it; the Menu shows a "Workout running" card to continue. Finish or the X button (Discard) ends it. A workout older than 24 h is dropped.
+- `src/lib/presetTemplates.ts`: four built-in templates (not stored, not editable, not counted toward the limit). Currently placeholders: replace them with the real ones.
+
+## Languages
+
+The app runs in German, English and Russian. The language follows the phone on first start and can be changed in Settings > Language.
+All texts go through `tr("English text", [params])` in `src/lib/i18n.ts`; the translations live in `src/lib/i18n.de.ts` and `src/lib/i18n.ru.ts`, keyed by the English text. A missing key falls back to English.
+Not translated yet: the how-to texts of the individual exercises (`src/data/exerciseInfo.ts`).

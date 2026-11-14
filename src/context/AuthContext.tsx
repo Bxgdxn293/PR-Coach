@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+import { tr } from '../lib/i18n';
 type AuthCtx = {
   user: User | null;
   loading: boolean;
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp: async (email, password) => {
       const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
       if (error) return error.message;
-      if (!data.session) return 'Check your inbox to confirm your email, then sign in.';
+      if (!data.session) return tr("Check your inbox to confirm your email, then sign in.");
       return null;
     },
     signOut: async () => {

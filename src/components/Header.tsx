@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export function Header({ title, right }: { title: string; right?: React.ReactNode }) {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -13,7 +14,7 @@ export function Header({ title, right }: { title: string; right?: React.ReactNod
     <View style={styles.row}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Back"
+        accessibilityLabel={tr("Back")}
         onPress={() => (navigation.canGoBack() ? navigation.goBack() : undefined)}
         style={styles.back}
       >

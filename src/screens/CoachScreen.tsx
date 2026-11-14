@@ -16,6 +16,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 /** PR Coach: 1-rep-max goals (e.g. bench 120 kg now, 150 kg wanted) with a 4-week plan that leads there. */
@@ -36,11 +37,9 @@ export function CoachScreen() {
   const addGoal = () => {
     if (active.length >= limit) {
       Alert.alert(
-        'Goal limit reached',
-        isPremium
-          ? `You can follow up to ${limit} goals at once.`
-          : 'The PR Coach is part of Premium.',
-        isPremium ? [{ text: 'OK' }] : [{ text: 'Not now', style: 'cancel' }, { text: 'See Premium', onPress: () => navigation.navigate('Paywall') }],
+        tr("Goal limit reached"),
+        isPremium ? tr("You can follow up to {0} goals at once.", [limit]) : tr("The PR Coach is part of Premium."),
+        isPremium ? [{ text: tr("OK") }] : [{ text: tr("Not now"), style: 'cancel' }, { text: tr("See Premium"), onPress: () => navigation.navigate('Paywall') }],
       );
       return;
     }
@@ -55,18 +54,18 @@ export function CoachScreen() {
   if (ready && !isPremium) {
     return (
       <Screen>
-        <Header title="PR Coach" />
+        <Header title={tr("PR Coach")} />
         <View style={styles.hero}>
           <View style={styles.heroTop}>
-            <Text style={styles.heroLabel}>PREMIUM</Text>
+            <Text style={styles.heroLabel}>{tr("PREMIUM")}</Text>
             <Feather name="lock" size={28} color={colors.onAccent} />
           </View>
-          <Text style={styles.heroName}>The PR Coach is Premium</Text>
+          <Text style={styles.heroName}>{tr("The PR Coach is Premium")}</Text>
           <Text style={styles.heroSub}>
-            Set a 1-rep-max goal and get a 4-week plan with the exact sets, warm-up included, as a fresh one-time template for every session. Plus faster-pace options and plateau checks.
+            {tr("Set a 1-rep-max goal and get a 4-week plan with the exact sets, warm-up included, as a fresh one-time template for every session. Plus faster-pace options and plateau checks.")}
           </Text>
           <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Paywall')} style={styles.heroBtn}>
-            <Text style={styles.heroBtnText}>See Premium</Text>
+            <Text style={styles.heroBtnText}>{tr("See Premium")}</Text>
           </Pressable>
         </View>
       </Screen>
@@ -75,20 +74,20 @@ export function CoachScreen() {
 
   return (
     <Screen>
-      <Header title="PR Coach" />
+      <Header title={tr("PR Coach")} />
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {loaded && goals.length === 0 && (
           <View style={styles.hero}>
             <View style={styles.heroTop}>
-              <Text style={styles.heroLabel}>YOUR GOAL</Text>
+              <Text style={styles.heroLabel}>{tr("YOUR GOAL")}</Text>
               <Feather name="target" size={28} color={colors.onAccent} />
             </View>
-            <Text style={styles.heroName}>Lift more for 1 rep</Text>
+            <Text style={styles.heroName}>{tr("Lift more for 1 rep")}</Text>
             <Text style={styles.heroSub}>
-              Tell the coach your current 1-rep max and the weight you want, for example 120 kg now and 150 kg next. You get a 4-week plan that repeats until you get there.
+              {tr("Tell the coach your current 1-rep max and the weight you want, for example 120 kg now and 150 kg next. You get a 4-week plan that repeats until you get there.")}
             </Text>
             <Pressable accessibilityRole="button" onPress={addGoal} style={styles.heroBtn}>
-              <Text style={styles.heroBtnText}>Set my first goal</Text>
+              <Text style={styles.heroBtnText}>{tr("Set my first goal")}</Text>
             </Pressable>
           </View>
         )}
@@ -99,12 +98,12 @@ export function CoachScreen() {
             <Pressable
               key={g.id}
               accessibilityRole="button"
-              accessibilityLabel={`${g.exercise}, ${w(g.current_kg)} to ${w(g.target_kg)}`}
+              accessibilityLabel={tr("{0}, {1} to {2}", [g.exercise, w(g.current_kg), w(g.target_kg)])}
               onPress={() => navigation.navigate('PrGoal', { id: g.id })}
               style={styles.goal}
             >
               <View style={styles.goalTop}>
-                <Text style={styles.goalName}>{g.exercise}</Text>
+                <Text style={styles.goalName}>{tr(g.exercise)}</Text>
                 <Feather name="chevron-right" size={22} color={colors.muted} />
               </View>
               <View style={styles.goalNums}>
@@ -118,13 +117,13 @@ export function CoachScreen() {
                 <View style={[styles.fill, { width: `${Math.max(3, progressPct(g.start_kg, g.current_kg, g.target_kg))}%` }]} />
               </View>
               <Text style={styles.sub}>
-                {progressPct(g.start_kg, g.current_kg, g.target_kg)}% · Cycle {cycle} · Week {week + 1} of {CYCLE_WEEKS}: {WEEK_NAMES[week]}
+                {tr("{0}% · Cycle {1} · Week {2} of {3}: {4}", [progressPct(g.start_kg, g.current_kg, g.target_kg), cycle, week + 1, CYCLE_WEEKS, tr(WEEK_NAMES[week])])}
               </Text>
             </Pressable>
           );
         })}
 
-        {done.length > 0 && <Text style={styles.section}>REACHED</Text>}
+        {done.length > 0 && <Text style={styles.section}>{tr("REACHED")}</Text>}
         {done.map((g) => (
           <Pressable
             key={g.id}
@@ -134,7 +133,7 @@ export function CoachScreen() {
           >
             <Feather name="check-circle" size={22} color={colors.accent} />
             <View style={styles.flex}>
-              <Text style={styles.rowName}>{g.exercise}</Text>
+              <Text style={styles.rowName}>{tr(g.exercise)}</Text>
               <Text style={styles.sub}>
                 {w(g.start_kg)} → {w(g.target_kg)}
               </Text>
@@ -146,12 +145,12 @@ export function CoachScreen() {
         {goals.length > 0 && (
           <Pressable accessibilityRole="button" onPress={addGoal} style={styles.add}>
             <Feather name="plus" size={20} color={colors.text} />
-            <Text style={styles.addText}>New goal</Text>
+            <Text style={styles.addText}>{tr("New goal")}</Text>
             <Text style={styles.sub}>{active.length}/{PREMIUM_GOAL_LIMIT}</Text>
           </Pressable>
         )}
 
-        {progressLifts.length > 0 && <Text style={styles.section}>PROGRESS &amp; PLATEAUS</Text>}
+        {progressLifts.length > 0 && <Text style={styles.section}>{tr("PROGRESS & PLATEAUS")}</Text>}
         {progressLifts.map((name) => (
           <ProgressCard
             key={name}

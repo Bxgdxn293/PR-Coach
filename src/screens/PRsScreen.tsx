@@ -11,6 +11,7 @@ import { formatWeight } from '../lib/units';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export function PRsScreen() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -20,11 +21,11 @@ export function PRsScreen() {
 
   return (
     <Screen>
-      <Header title="PR Records" />
+      <Header title={tr("PR Records")} />
       {!top ? (
         <View style={styles.empty}>
           <Feather name="award" size={40} color={colors.muted} />
-          <Text style={styles.emptyText}>No records yet. Finish a workout and your best lifts show up here.</Text>
+          <Text style={styles.emptyText}>{tr("No records yet. Finish a workout and your best lifts show up here.")}</Text>
         </View>
       ) : (
         <FlatList
@@ -34,17 +35,17 @@ export function PRsScreen() {
           ListHeaderComponent={
             <View style={[styles.hero, { marginBottom: 12 }]}>
               <View style={styles.heroTop}>
-                <Text style={styles.heroLabel}>HEAVIEST LIFT</Text>
+                <Text style={styles.heroLabel}>{tr("HEAVIEST LIFT")}</Text>
                 <Feather name="award" size={32} color={colors.onAccent} />
               </View>
               <View style={styles.heroBottom}>
                 <View style={styles.flex}>
-                  <Text style={styles.heroName}>{top.exercise}</Text>
+                  <Text style={styles.heroName}>{tr(top.exercise)}</Text>
                   <Text style={styles.heroDate}>
-                    {formatDate(top.date)} · {top.reps} reps
+                    {formatDate(top.date)} · {top.reps} {tr("reps")}
                   </Text>
                   {bestE1rm(top.exercise, workouts) > 0 && (
-                    <Text style={styles.heroDate}>Est. 1RM {formatWeight(bestE1rm(top.exercise, workouts), unit)}</Text>
+                    <Text style={styles.heroDate}>{tr("Est. 1RM")} {formatWeight(bestE1rm(top.exercise, workouts), unit)}</Text>
                   )}
                 </View>
                 <Text style={styles.heroValue}>{formatWeight(top.kg, unit)}</Text>
@@ -54,15 +55,15 @@ export function PRsScreen() {
           renderItem={({ item }) => (
             <View style={styles.row}>
               <View style={styles.flex}>
-                <Text style={styles.name}>{item.exercise}</Text>
+                <Text style={styles.name}>{tr(item.exercise)}</Text>
                 <Text style={styles.sub}>{formatDate(item.date)}</Text>
                 {bestE1rm(item.exercise, workouts) > 0 && (
-                  <Text style={styles.e1rm}>Est. 1RM {formatWeight(bestE1rm(item.exercise, workouts), unit)}</Text>
+                  <Text style={styles.e1rm}>{tr("Est. 1RM")} {formatWeight(bestE1rm(item.exercise, workouts), unit)}</Text>
                 )}
               </View>
               <View style={styles.right}>
                 <Text style={styles.value}>{formatWeight(item.kg, unit)}</Text>
-                <Text style={styles.sub}>{item.reps} reps</Text>
+                <Text style={styles.sub}>{item.reps} {tr("reps")}</Text>
               </View>
             </View>
           )}

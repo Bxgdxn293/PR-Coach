@@ -2,6 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SavedExercise } from '../types';
 
+import { tr, dateLocale } from './i18n';
+import { PRESET_TEMPLATES } from './presetTemplates';
+
+const HIDDEN_KEY = 'workout.presets.hidden.v1';
+async function loadHidden(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(HIDDEN_KEY);
+    const p = raw ? JSON.parse(raw) : [];
+    return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 /** A saved workout layout: exercise order and number of sets. Weights are prefilled from the last logged set. */
 export type TemplateExercise = {
   name: string;
@@ -19,6 +32,8 @@ export type WorkoutTemplate = {
   last_used_at?: string;
   /** Created by the PR Coach for exactly one workout: removed when that workout is saved. Does not count toward the limit. */
   once?: boolean;
+  /** Built-in template shipped with the app (src/lib/presetTemplates.ts): not stored, not editable, not counted. */
+  preset?: boolean;
 };
 
 const KEY = 'workout.templates.v1';
@@ -74,7 +89,7 @@ export function templateFromEntries(entries: SavedExercise[]): TemplateExercise[
 
 /** Same name (case-insensitive) replaces the existing template, so there is one per name. */
 export function upsertTemplate(list: WorkoutTemplate[], name: string, exercises: TemplateExercise[], now = new Date()): WorkoutTemplate[] {
-  const clean = name.trim().slice(0, 40) || 'Workout';
+  const clean = name.trim().slice(0, 40) || tr("Workout");
   const existing = list.find((t) => t.name.toLowerCase() === clean.toLowerCase());
   const entry: WorkoutTemplate = {
     id: existing?.id ?? `${now.getTime().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
@@ -99,7 +114,7 @@ export function saveTemplateEdit(
   isPremium: boolean,
   now = new Date(),
 ): EditResult {
-  const clean = name.trim().slice(0, 40) || 'Workout';
+  const clean = name.trim().slice(0, 40) || tr("Workout");
   if (list.some((t) => t.id !== id && t.name.toLowerCase() === clean.toLowerCase())) return { list, error: 'name_taken' };
   const current = id ? list.find((t) => t.id === id) : undefined;
   if (!current && list.filter((t) => !t.once).length >= (isPremium ? PREMIUM_TEMPLATE_LIMIT : FREE_TEMPLATE_LIMIT)) return { list, error: 'limit' };
@@ -147,26 +162,28 @@ export function markUsed(list: WorkoutTemplate[], id: string, now = new Date()):
 
 /** "Never used", "Today", "Yesterday", "5 days ago" (up to 13 days), otherwise the date. */
 export function lastUsedLabel(iso: string | undefined, now = new Date()): string {
-  if (!iso) return 'Not used yet';
+  if (!iso) return tr("Not used yet");
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'Not used yet';
+  if (Number.isNaN(d.getTime())) return tr("Not used yet");
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((startOf(now) - startOf(d)) / 86400000);
-  if (days <= 0) return 'Used today';
-  if (days === 1) return 'Used yesterday';
-  if (days < 14) return `Used ${days} days ago`;
-  return `Used ${d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  if (days <= 0) return tr("Used today");
+  if (days === 1) return tr("Used yesterday");
+  if (days < 14) return tr("Used {0} days ago", [days]);
+  return tr("Used {0}", [d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short', year: 'numeric' })]);
 }
 
 export function useTemplates() {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [hidden, setHidden] = useState<string[]>([]);
 
   useEffect(() => {
     let alive = true;
-    loadTemplates().then((l) => {
+    Promise.all([loadTemplates(), loadHidden()]).then(([l, h]) => {
       if (alive) {
         setTemplates(l);
+        setHidden(h);
         setLoaded(true);
       }
     });
@@ -206,6 +223,20 @@ export function useTemplates() {
     await persist(next);
   }, []);
 
+  /** Built-in templates can be removed too (hidden on this device). */
+  const removePreset = useCallback(async (id: string) => {
+    const current = await loadHidden();
+    const next = current.includes(id) ? current : [...current, id];
+    setHidden(next);
+    try {
+      await AsyncStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
+    } catch {
+      // best effort
+    }
+  }, []);
+
+  const presets = PRESET_TEMPLATES.filter((p) => !hidden.includes(p.id));
+
   const addOnce = useCallback(async (t: WorkoutTemplate) => {
     const current = await loadTemplates();
     const next = putTemplate(current, t);
@@ -213,5 +244,5 @@ export function useTemplates() {
     await persist(next);
   }, []);
 
-  return { templates, loaded, save, saveEdit, touch, remove, addOnce };
+  return { templates, presets, loaded, save, saveEdit, touch, remove, removePreset, addOnce };
 }

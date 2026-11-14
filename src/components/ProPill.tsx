@@ -3,12 +3,13 @@ import { StyleSheet, Text, View } from 'react-native';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export function ProPill() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={styles.pill} accessibilityLabel="Premium feature">
-      <Text style={styles.text}>PRO</Text>
+    <View style={styles.pill} accessibilityLabel={tr("Premium feature")}>
+      <Text style={styles.text}>{tr("PRO")}</Text>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import * as VideoThumbnails from 'expo-video-thumbnails';
 import { supabase } from './supabase';
 
+import { tr } from './i18n';
 export const FORM_EXERCISES = ['Squat', 'Bench', 'Deadlift', 'Press'] as const;
 export type FormExercise = (typeof FORM_EXERCISES)[number];
 
@@ -39,30 +40,30 @@ export function describeError(e: unknown): string {
   const code = e instanceof FormCheckError ? e.code : 'unknown';
   switch (code) {
     case 'premium_required':
-      return 'Form Check needs credits or Premium.';
+      return tr("Form Check needs credits or Premium.");
     case 'insufficient_credits': {
       const err = e as FormCheckError;
       return err.needed !== undefined && err.balance !== undefined
-        ? `Not enough credits: this check costs ${err.needed} and you have ${err.balance}.`
-        : 'Not enough credits for a Form Check.';
+        ? tr("Not enough credits: this check costs {0} and you have {1}.", [err.needed, err.balance])
+        : tr("Not enough credits for a Form Check.");
     }
     case 'timeout':
-      return 'The analysis took too long. Your credits were refunded; please try again.';
+      return tr("The analysis took too long. Your credits were refunded; please try again.");
     case 'internal':
-      return 'Something went wrong on our side. Any credits were refunded; please try again.';
+      return tr("Something went wrong on our side. Any credits were refunded; please try again.");
     case 'daily_limit':
-      return 'You reached today’s Form Check limit. Try again tomorrow.';
+      return tr("You reached today’s Form Check limit. Try again tomorrow.");
     case 'bad_frames':
     case 'too_large':
-      return 'The video frames could not be processed. Try a shorter recording.';
+      return tr("The video frames could not be processed. Try a shorter recording.");
     case 'upstream_error':
     case 'upstream_unreachable':
     case 'unreadable_answer':
-      return 'The analysis service did not answer. Please try again in a moment.';
+      return tr("The analysis service did not answer. Please try again in a moment.");
     case 'not_configured':
-      return 'Form Check is not set up on the server yet.';
+      return tr("Form Check is not set up on the server yet.");
     default:
-      return 'Something went wrong. Check your connection and try again.';
+      return tr("Something went wrong. Check your connection and try again.");
   }
 }
 

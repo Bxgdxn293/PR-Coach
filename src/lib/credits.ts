@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { ThemeId } from '../theme';
 
+import { tr } from './i18n';
 export type CreditReason = 'form_check' | 'refund' | 'weekly_bonus' | 'referral_reward' | 'gift_in' | 'gift_out';
 
 export type LedgerEntry = {
@@ -96,6 +97,7 @@ export const fetchMyCredits = () => call<CreditsData>('my_credits');
 export const fetchAppConfig = () => call<AppConfig>('app_config');
 export const rpcSetUsername = (username: string) => call<{ username: string }>('set_username', { username });
 export const rpcSetTheme = (theme: ThemeId) => call<{ theme: string }>('set_theme', { theme });
+export const rpcUnlockShadow = () => call<{}>('unlock_shadow');
 export const rpcRedeemInvite = (code: string) =>
   call<{ inviter_id: string; inviter_username: string | null }>('redeem_invite', { code });
 
@@ -105,29 +107,29 @@ export const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 export function describeCreditError(code: string): string {
   switch (code) {
     case 'invalid_username':
-      return 'Use 3 to 20 characters: letters, numbers and underscore.';
+      return tr("Use 3 to 20 characters: letters, numbers and underscore.");
     case 'username_taken':
-      return 'This username is already taken.';
+      return tr("This username is already taken.");
     case 'too_many_attempts':
-      return 'Too many attempts. Please try again later.';
+      return tr("Too many attempts. Please try again later.");
     case 'theme_locked':
-      return 'This theme is not unlocked yet.';
+      return tr("This theme is not unlocked yet.");
     case 'already_redeemed':
-      return 'You already used an invite code.';
+      return tr("You already used an invite code.");
     case 'invite_window_expired':
-      return 'This code can only be used in the first days after sign-up.';
+      return tr("This code can only be used in the first days after sign-up.");
     case 'invalid_code':
-      return 'This invite code is not valid.';
+      return tr("This invite code is not valid.");
     case 'own_code':
-      return 'You cannot use your own invite code.';
+      return tr("You cannot use your own invite code.");
     case 'mutual_invite':
-      return 'This person was invited by you, so the code cannot be used.';
+      return tr("This person was invited by you, so the code cannot be used.");
     case 'not_authenticated':
-      return 'Please sign in again.';
+      return tr("Please sign in again.");
     case 'network':
-      return 'No connection. Check your internet and try again.';
+      return tr("No connection. Check your internet and try again.");
     default:
-      return 'Something went wrong. Please try again.';
+      return tr("Something went wrong. Please try again.");
   }
 }
 
@@ -135,18 +137,18 @@ export function describeReason(e: Pick<LedgerEntry, 'reason' | 'counterparty_use
   const name = e.counterparty_username ? `@${e.counterparty_username}` : 'a friend';
   switch (e.reason) {
     case 'form_check':
-      return 'Form Check';
+      return tr("Form Check");
     case 'refund':
-      return 'Form Check refund';
+      return tr("Form Check refund");
     case 'weekly_bonus':
-      return 'Weekly goal bonus';
+      return tr("Weekly goal bonus");
     case 'referral_reward':
-      return 'Invite reward';
+      return tr("Invite reward");
     case 'gift_in':
-      return `Gift from ${name}`;
+      return tr("Gift from {0}", [name]);
     case 'gift_out':
-      return `Gift to ${name}`;
+      return tr("Gift to {0}", [name]);
     default:
-      return 'Credits';
+      return tr("Credits");
   }
 }

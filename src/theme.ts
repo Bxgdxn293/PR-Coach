@@ -12,7 +12,9 @@ export type Palette = {
   warn: string;
 };
 
-export type ThemeId = 'lime' | 'blue' | 'red' | 'purple' | 'gold';
+/** 'shadow' is the hidden theme: unlocked by a secret gesture (see ThemesScreen), stored on the server like the others so friends see it. */
+export type ThemeId = 'lime' | 'blue' | 'red' | 'purple' | 'gold' | 'shadow';
+export type AnyThemeId = ThemeId;
 
 const lime: Palette = {
   bg: '#0b0c10',
@@ -88,7 +90,25 @@ const gold: Palette = {
   warn: '#ff9f6b',
 };
 
-export const THEMES: Record<ThemeId, Palette> = { lime, blue, red, purple, gold };
+// Shadow (secret): near-black with deep purple. The screen background animates between black and dark purple (ShadowBackdrop);
+// cards are slightly see-through so the movement shows through. Contrast white on accent #2563eb: ca. 5.2:1
+export const SHADOW: Palette = {
+  bg: '#02060f',
+  card: 'rgba(8, 18, 40, 0.72)',
+  cardAlt: 'rgba(12, 28, 60, 0.78)',
+  border: '#1e3a6e',
+  text: '#ffffff',
+  muted: '#93a6c9',
+  accent: '#2563eb',
+  onAccent: '#ffffff',
+  doneBg: '#0c1f4a',
+  danger: '#ff7a7a',
+  warn: '#ffb454',
+};
+
+export const THEMES: Record<ThemeId, Palette> = { lime, blue, red, purple, gold, shadow: SHADOW };
+
+export const paletteOf = (id: ThemeId): Palette => THEMES[id];
 
 export const fonts = {
   medium: 'SpaceGrotesk_500Medium',

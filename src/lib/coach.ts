@@ -2,6 +2,7 @@
 import { EXERCISES } from '../data/exercises';
 import type { Goal, Profile, Unit, Workout } from '../types';
 
+import { tr } from './i18n';
 // Onboarding names -> exercise names used in workouts and the library.
 export const FOCUS_LIFTS: Record<string, string> = {
   'Bench Press': 'Barbell Bench Press',
@@ -74,7 +75,7 @@ export function workoutTarget(exercise: string, workouts: Workout[], goal: Goal)
       reps: repTarget,
       last: lastInfo,
       increment,
-      reason: `You did ${top.reps} reps at ${fmt(top.kg)} kg last time, so the next step is +${fmt(increment)} kg for ${repTarget} reps.`,
+      reason: tr("You did {0} reps at {1} kg last time, so the next step is +{2} kg for {3} reps.", [top.reps, fmt(top.kg), fmt(increment), repTarget]),
     };
   }
   const reps = Math.min(repTarget, top.reps + 1);
@@ -84,7 +85,7 @@ export function workoutTarget(exercise: string, workouts: Workout[], goal: Goal)
     reps,
     last: lastInfo,
     increment,
-    reason: `Last time you did ${top.reps} reps at ${fmt(top.kg)} kg. Beat it by one rep before adding weight; at ${repTarget} reps you move up.`,
+    reason: tr("Last time you did {0} reps at {1} kg. Beat it by one rep before adding weight; at {2} reps you move up.", [top.reps, fmt(top.kg), repTarget]),
   };
 }
 
@@ -204,16 +205,16 @@ function remediesFor(history: E1rmPoint[], bestIdx: number): Remedy[] {
   return [
     {
       kind: 'deload',
-      title: 'Deload 10%',
-      detail: 'Train one week at 90% of your top weight with the same sets and reps, then build up again.',
+      title: tr("Deload 10%"),
+      detail: tr("Train one week at 90% of your top weight with the same sets and reps, then build up again."),
       kg: deloadKg,
     },
     {
       kind: 'rep-range',
-      title: `Switch to ${repRange[0]}-${repRange[1]} reps`,
+      title: tr("Switch to {0}-{1} reps", [repRange[0], repRange[1]]),
       detail: heavy
-        ? 'Your best set was heavy and low-rep. Two to three weeks of moderate reps builds volume, then return to heavy sets.'
-        : 'Your best set came from higher reps. Two to three weeks of heavy low-rep sets trains top-end strength, then return to higher reps.',
+        ? tr("Your best set was heavy and low-rep. Two to three weeks of moderate reps builds volume, then return to heavy sets.")
+        : tr("Your best set came from higher reps. Two to three weeks of heavy low-rep sets trains top-end strength, then return to higher reps."),
       repRange,
     },
   ];
@@ -229,14 +230,14 @@ export type Forecast =
 export function forecastPR(history: E1rmPoint[]): Forecast {
   const insufficient = (message: string): Forecast => ({ kind: 'insufficient', message });
   if (history.length < FORECAST_MIN_SESSIONS) {
-    return insufficient(`Not enough data yet: need at least ${FORECAST_MIN_SESSIONS} sessions of this lift, you have ${history.length}.`);
+    return insufficient(tr("Not enough data yet: need at least {0} sessions of this lift, you have {1}.", [FORECAST_MIN_SESSIONS, history.length]));
   }
   const pts = history.slice(-8);
   const t0 = new Date(pts[0].date).getTime();
   const xs = pts.map((p) => (new Date(p.date).getTime() - t0) / (7 * DAY_MS)); // weeks
   const spanDays = xs[xs.length - 1] * 7;
   if (spanDays < FORECAST_MIN_SPAN_DAYS) {
-    return insufficient(`Not enough data yet: your sessions span only ${Math.floor(spanDays)} days, need ${FORECAST_MIN_SPAN_DAYS}.`);
+    return insufficient(tr("Not enough data yet: your sessions span only {0} days, need {1}.", [Math.floor(spanDays), FORECAST_MIN_SPAN_DAYS]));
   }
   const ys = pts.map((p) => p.e1rm);
   const n = pts.length;
@@ -247,7 +248,7 @@ export function forecastPR(history: E1rmPoint[]): Forecast {
   const syy = ys.reduce((a, y) => a + (y - my) ** 2, 0);
   const slope = sxx > 0 ? sxy / sxx : 0;
   if (slope <= 0.05) {
-    return { kind: 'no-progress', message: 'Your recent trend is flat or falling, so no honest PR date can be given.' };
+    return { kind: 'no-progress', message: tr("Your recent trend is flat or falling, so no honest PR date can be given.") };
   }
   const intercept = my - slope * mx;
   const r2 = syy > 0 ? (sxy * sxy) / (sxx * syy) : 0;
@@ -256,7 +257,7 @@ export function forecastPR(history: E1rmPoint[]): Forecast {
   const targetX = (best + 0.1 - intercept) / slope; // week at which the trend line passes the best e1RM
   const weeks = Math.max(1, Math.ceil(targetX - lastX));
   if (weeks > FORECAST_MAX_WEEKS) {
-    return { kind: 'too-far', message: 'At your current trend a new PR is more than a year away.' };
+    return { kind: 'too-far', message: tr("At your current trend a new PR is more than a year away.") };
   }
   const confidence = r2 >= 0.5 && n >= 5 ? 'medium' : 'low';
   return {
@@ -264,7 +265,7 @@ export function forecastPR(history: E1rmPoint[]): Forecast {
     weeks,
     slopePerWeek: round1(slope),
     confidence,
-    message: `At your current trend: new PR in about ${weeks} week${weeks === 1 ? '' : 's'} (${confidence} confidence).`,
+    message: tr("At your current trend: new PR in about {0} week(s) (confidence: {1}).", [weeks, tr(confidence)]),
   };
 }
 

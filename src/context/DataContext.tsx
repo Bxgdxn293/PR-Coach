@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import { useCredits } from './CreditsContext';
 import type { SavedExercise, Workout } from '../types';
 
+import { tr } from '../lib/i18n';
 export const FREE_WEEKLY_LIMIT = 3;
 
 export type PersonalRecord = { exercise: string; kg: number; reps: number; date: string };
@@ -92,10 +93,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const cfg = credits.config;
       const sets = w.entries.reduce((n, e) => n + e.sets.filter((s) => s.reps >= 1 && s.reps <= 100 && s.kg >= 0 && s.kg <= 1000).length, 0);
       const minutes = Math.round(cfg.qualify_min_duration_sec / 60);
-      let reason = 'You already have a counting workout today (1 per day).';
-      if (w.duration_sec < cfg.qualify_min_duration_sec) reason = `It was shorter than ${minutes} minutes.`;
-      else if (sets < cfg.qualify_min_sets) reason = `It had fewer than ${cfg.qualify_min_sets} sets.`;
-      Alert.alert('Saved, but no credits', `This workout does not count towards your weekly goal. ${reason}`);
+      let reason = tr("You already have a counting workout today (1 per day).");
+      if (w.duration_sec < cfg.qualify_min_duration_sec) reason = tr("It was shorter than {0} minutes.", [minutes]);
+      else if (sets < cfg.qualify_min_sets) reason = tr("It had fewer than {0} sets.", [cfg.qualify_min_sets]);
+      Alert.alert(tr("Saved, but no credits"), tr("This workout does not count towards your weekly goal. {0}", [reason]));
     }
     return null;
   };

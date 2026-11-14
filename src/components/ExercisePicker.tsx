@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Modal, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Screen } from './Screen';
-import { EXERCISES, type LibraryExercise } from '../data/exercises';
+import { EXERCISES, MUSCLES, type LibraryExercise } from '../data/exercises';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export type PickerSort = 'alpha' | 'muscle';
 
 const byName = (a: LibraryExercise, b: LibraryExercise) => a.name.localeCompare(b.name);
@@ -27,7 +28,7 @@ export function ExercisePicker({
   visible,
   onPick,
   onClose,
-  title = 'Add exercise',
+  title,
 }: {
   visible: boolean;
   onPick: (name: string) => void;
@@ -37,7 +38,15 @@ export function ExercisePicker({
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [sort, setSort] = useState<PickerSort>(lastSort);
-  const sections = useMemo(() => sortExercises(EXERCISES, sort), [sort]);
+  const [query, setQuery] = useState('');
+  const [muscle, setMuscle] = useState('All');
+  const sections = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = EXERCISES.filter(
+      (e) => (muscle === 'All' || e.muscle === muscle) && (!q || e.name.toLowerCase().includes(q) || tr(e.name).toLowerCase().includes(q)),
+    );
+    return sortExercises(list, sort);
+  }, [sort, query, muscle]);
 
   const toggle = () => {
     const next: PickerSort = sort === 'alpha' ? 'muscle' : 'alpha';
@@ -50,36 +59,68 @@ export function ExercisePicker({
       <Screen hideCredits>
         <View style={styles.head}>
           <Text accessibilityRole="header" style={styles.title}>
-            {title}
+            {title ?? tr("Add exercise")}
           </Text>
           <Pressable
             onPress={toggle}
             accessibilityRole="button"
-            accessibilityLabel={sort === 'alpha' ? 'Sorted A to Z. Switch to sort by muscle group' : 'Sorted by muscle group. Switch to sort A to Z'}
+            accessibilityLabel={sort === 'alpha' ? tr("Sorted A to Z. Switch to sort by muscle group") : tr("Sorted by muscle group. Switch to sort A to Z")}
             style={styles.sortBtn}
           >
             <Feather name={sort === 'alpha' ? 'type' : 'layers'} size={16} color={colors.accent} />
-            <Text style={styles.sortText}>{sort === 'alpha' ? 'A–Z' : 'Muscle'}</Text>
+            <Text style={styles.sortText}>{sort === 'alpha' ? 'A–Z' : tr("Muscle")}</Text>
           </Pressable>
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.close}>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={tr("Close")} style={styles.close}>
             <Feather name="x" size={20} color={colors.text} />
           </Pressable>
         </View>
+        <View style={styles.search}>
+          <Feather name="search" size={20} color={colors.muted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={tr("Search exercises")}
+            placeholderTextColor={colors.muted}
+            value={query}
+            onChangeText={setQuery}
+            accessibilityLabel={tr("Search exercises")}
+            returnKeyType="search"
+          />
+        </View>
+        <View style={styles.chipsWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            {MUSCLES.map((m) => {
+              const on = m === muscle;
+              return (
+                <Pressable
+                  key={m}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => setMuscle(m)}
+                  style={[styles.chip, on && { backgroundColor: colors.accent }]}
+                >
+                  <Text style={[styles.chipText, on && { color: colors.onAccent }]}>{tr(m)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
         <SectionList
           sections={sections}
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={<Text style={styles.empty}>{tr("No exercises found")}</Text>}
           keyExtractor={(e) => e.name}
           stickySectionHeadersEnabled={false}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ gap: 10, paddingBottom: 16 }}
           renderSectionHeader={({ section }) =>
-            section.title ? <Text style={styles.section}>{section.title.toUpperCase()}</Text> : null
+            section.title ? <Text style={styles.section}>{tr(section.title).toUpperCase()}</Text> : null
           }
           renderItem={({ item }) => (
             <Pressable accessibilityRole="button" style={styles.row} onPress={() => onPick(item.name)}>
               <View style={styles.flex}>
-                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.name}>{tr(item.name)}</Text>
                 <Text style={styles.meta}>
-                  {item.muscle} · {item.equipment}
+                  {tr(item.muscle)} · {tr(item.equipment)}
                 </Text>
               </View>
               <Feather name="plus" size={20} color={colors.accent} />
@@ -118,6 +159,33 @@ const makeStyles = (colors: Palette) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
+    search: {
+      height: 52,
+      borderRadius: 26,
+      paddingHorizontal: 18,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 8,
+    },
+    searchInput: { flex: 1, height: 48, color: colors.text, fontFamily: fonts.medium, fontSize: 16 },
+    chipsWrap: { height: 44, marginBottom: 10 },
+    chips: { gap: 8 },
+    chip: {
+      height: 44,
+      paddingHorizontal: 18,
+      borderRadius: 22,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    chipText: { color: colors.text, fontFamily: fonts.bold, fontSize: 15 },
+    empty: { color: colors.muted, fontFamily: fonts.medium, fontSize: 16, textAlign: 'center', paddingVertical: 32 },
     section: { color: colors.muted, fontFamily: fonts.medium, fontSize: 12, letterSpacing: 1.5, marginTop: 8 },
     row: {
       minHeight: 68,

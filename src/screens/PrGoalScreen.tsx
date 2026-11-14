@@ -17,6 +17,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr, dateLocale } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function PrGoalScreen() {
@@ -38,10 +39,10 @@ export function PrGoalScreen() {
   if (ready && !isPremium) {
     return (
       <Screen>
-        <Header title="PR Coach" />
-        <Text style={styles.hint}>The PR Coach is part of Premium.</Text>
+        <Header title={tr("PR Coach")} />
+        <Text style={styles.hint}>{tr("The PR Coach is part of Premium.")}</Text>
         <Pressable accessibilityRole="button" onPress={() => navigation.replace('Paywall')} style={styles.startBtn}>
-          <Text style={styles.startText}>See Premium</Text>
+          <Text style={styles.startText}>{tr("See Premium")}</Text>
         </Pressable>
       </Screen>
     );
@@ -50,8 +51,8 @@ export function PrGoalScreen() {
   if (!goal) {
     return (
       <Screen>
-        <Header title="Goal" />
-        <Text style={styles.hint}>{loaded ? 'This goal no longer exists.' : 'Loading…'}</Text>
+        <Header title={tr("Goal")} />
+        <Text style={styles.hint}>{loaded ? tr("This goal no longer exists.") : tr("Loading…")}</Text>
       </Screen>
     );
   }
@@ -73,7 +74,7 @@ export function PrGoalScreen() {
     const t = coachTemplate(
       goal.id,
       goal.exercise,
-      `${WEEK_NAMES[week]} · ${s.title}`,
+      `${tr(WEEK_NAMES[week])} · ${s.title}`,
       [...warm, ...s.sets.map((x) => ({ kg: x.kg, reps: x.reps }))],
     );
     await addOnce(t);
@@ -83,7 +84,7 @@ export function PrGoalScreen() {
   const saveMax = async () => {
     const kg = fromDisplay(parseNumber(newMax), unit);
     if (!(kg > 0) || kg > 800) {
-      Alert.alert('Check the number', 'Enter your new 1-rep max.');
+      Alert.alert(tr("Check the number"), tr("Enter your new 1-rep max."));
       return;
     }
     const reached = kg >= goal.target_kg;
@@ -99,23 +100,23 @@ export function PrGoalScreen() {
   const applySpeedUp = (o: SpeedUp) => {
     const text =
       o.id === 'second_session'
-        ? 'You add a short support session each week. Do it only if you can recover: sleep, food and no pain in joints.'
-        : 'Two sessions per week with harder weeks and a higher max-test attempt. Do it only if you recover well; you can switch back any time.';
+        ? tr("You add a short support session each week. Do it only if you can recover: sleep, food and no pain in joints.")
+        : tr("Two sessions per week with harder weeks and a higher max-test attempt. Do it only if you recover well; you can switch back any time.");
     Alert.alert(
-      o.id === 'second_session' ? 'Add the support session?' : 'Switch to fast pace?',
-      `${text}\n\nEstimate: about ${o.weeksSaved} weeks sooner. This is a planning estimate, not a promise.`,
+      o.id === 'second_session' ? tr("Add the support session?") : tr("Switch to fast pace?"),
+      tr("{0}\n\nEstimate: about {1} weeks sooner. This is a planning estimate, not a promise.", [text, o.weeksSaved]),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Switch', onPress: () => update(goal.id, o.patch) },
+        { text: tr("Cancel"), style: 'cancel' },
+        { text: tr("Switch"), onPress: () => update(goal.id, o.patch) },
       ],
     );
   };
 
   const confirmDelete = () =>
-    Alert.alert('Delete goal?', `The plan for ${goal.exercise} will be removed from this device. Your workouts stay.`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tr("Delete goal?"), tr("The plan for {0} will be removed from this device. Your workouts stay.", [goal.exercise]), [
+      { text: tr("Cancel"), style: 'cancel' },
       {
-        text: 'Delete',
+        text: tr("Delete"),
         style: 'destructive',
         onPress: async () => {
           await remove(goal.id);
@@ -126,10 +127,10 @@ export function PrGoalScreen() {
 
   return (
     <Screen>
-      <Header title={goal.exercise} />
+      <Header title={tr(goal.exercise)} />
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <Text style={styles.heroLabel}>{goal.achieved_at ? 'GOAL REACHED' : 'YOUR 1-REP MAX'}</Text>
+          <Text style={styles.heroLabel}>{goal.achieved_at ? tr("GOAL REACHED") : tr("YOUR 1-REP MAX")}</Text>
           <View style={styles.nums}>
             <Text style={styles.now}>{toDisplay(goal.current_kg, unit)}</Text>
             <Feather name="arrow-right" size={26} color={colors.onAccent} />
@@ -142,79 +143,75 @@ export function PrGoalScreen() {
             <View style={[styles.fill, { width: `${Math.max(3, pct)}%` }]} />
           </View>
           <Text style={styles.heroSub}>
-            {pct}% from {w(goal.start_kg)}
-            {!goal.achieved_at && weeks !== null && weeks > 0 && eta
-              ? ` · about ${weeks} weeks left (${eta.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })})`
-              : ''}
+            {tr("{0}% from {1}", [pct, w(goal.start_kg)])}
+            {!goal.achieved_at && weeks !== null && weeks > 0 && eta ? tr(" · about {0} weeks left ({1})", [weeks, eta.toLocaleDateString(dateLocale(), { month: 'short', year: 'numeric' })]) : ''}
           </Text>
         </View>
 
         {est > goal.current_kg + 2.5 && !goal.achieved_at && (
           <Text style={styles.hint}>
-            Your logged sets point to roughly {w(est)} for one rep. If you know you can lift that once, log it as your new max.
+            {tr("Your logged sets point to roughly {0} for one rep. If you know you can lift that once, log it as your new max.", [w(est)])}
           </Text>
         )}
 
         {!goal.achieved_at && goal.pace === 'fast' && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Fast pace is on. Switch back to steady pace"
+            accessibilityLabel={tr("Fast pace is on. Switch back to steady pace")}
             onPress={() => update(goal.id, { pace: 'steady' })}
             style={styles.paceChip}
           >
             <Feather name="zap" size={16} color={colors.accent} />
-            <Text style={styles.paceChipText}>Fast pace on · tap to go back to steady</Text>
+            <Text style={styles.paceChipText}>{tr("Fast pace on · tap to go back to steady")}</Text>
           </Pressable>
         )}
 
         {status === 'ahead' && !goal.achieved_at && (
-          <Text style={styles.hint}>You are ahead of the plan. Good: the options below fit your pace.</Text>
+          <Text style={styles.hint}>{tr("You are ahead of the plan. Good: the options below fit your pace.")}</Text>
         )}
         {status === 'behind' && !goal.achieved_at && (
           <Text style={styles.hint}>
-            Progress is slower than planned. Do not rush it: keep the steady plan, protect your sleep and protein, and log your sessions. The faster options appear again when you are back on track.
+            {tr("Progress is slower than planned. Do not rush it: keep the steady plan, protect your sleep and protein, and log your sessions. The faster options appear again when you are back on track.")}
           </Text>
         )}
 
         {faster.length > 0 && (
           <View style={styles.fasterCard}>
-            <Text style={styles.fasterTitle}>Reach it faster</Text>
+            <Text style={styles.fasterTitle}>{tr("Reach it faster")}</Text>
             {faster.map((o) => (
               <View key={o.id} style={styles.fasterRow}>
                 <View style={styles.flex}>
-                  <Text style={styles.sessionTitle}>{o.id === 'second_session' ? 'Add a support session' : 'Fast pace'}</Text>
+                  <Text style={styles.sessionTitle}>{o.id === 'second_session' ? tr("Add a support session") : tr("Fast pace")}</Text>
                   <Text style={styles.hint}>
-                    About {o.weeksSaved} weeks sooner · {o.eta.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                    {tr("About {0} weeks sooner ·", [o.weeksSaved])} {o.eta.toLocaleDateString(dateLocale(), { month: 'short', year: 'numeric' })}
                   </Text>
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Switch: ${o.id === 'second_session' ? 'add a support session' : 'fast pace'}`} onPress={() => applySpeedUp(o)} style={styles.startBtn}>
-                  <Text style={styles.startText}>Switch</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={tr("Switch: {0}", [o.id === 'second_session' ? 'add a support session' : 'fast pace'])} onPress={() => applySpeedUp(o)} style={styles.startBtn}>
+                  <Text style={styles.startText}>{tr("Switch")}</Text>
                 </Pressable>
               </View>
             ))}
-            <Text style={styles.hint}>Estimates from training rules of thumb, not measurements. Never more than about 1.25% of your max per week.</Text>
+            <Text style={styles.hint}>{tr("Estimates from training rules of thumb, not measurements. Never more than about 1.25% of your max per week.")}</Text>
           </View>
         )}
 
         {goal.achieved_at ? (
           <Pressable accessibilityRole="button" onPress={() => navigation.navigate('PrGoalEdit', { id: goal.id })} style={styles.primary}>
-            <Text style={styles.primaryText}>Raise the goal</Text>
+            <Text style={styles.primaryText}>{tr("Raise the goal")}</Text>
           </Pressable>
         ) : (
           <>
             <Text style={styles.section}>
-              THIS WEEK · CYCLE {cycle} · WEEK {week + 1} OF {CYCLE_WEEKS}: {WEEK_NAMES[week].toUpperCase()}
+              {tr("THIS WEEK · CYCLE {0} · WEEK {1} OF {2}: {3}", [cycle, week + 1, CYCLE_WEEKS, tr(WEEK_NAMES[week])]).toUpperCase()}
             </Text>
             {sessions.map((s) => (
               <View key={s.kind} style={styles.session}>
                 <View style={styles.flex}>
                   <Text style={styles.sessionTitle}>
-                    {s.kind === 'main' ? 'Main session' : 'Support session'} · {s.title}
+                    {s.kind === 'main' ? tr("Main session") : tr("Support session")} · {s.title}
                   </Text>
                   <Text style={styles.sessionSets}>
-                    {s.attempt
-                      ? `Singles up to ${w(s.attempt)}`
-                      : `${s.sets.length} × ${s.sets[0].reps} @ ${w(s.sets[0].kg)}`}
+                    {s.attempt ? tr("Singles up to {0}", [w(s.attempt)]) : `${s.sets.length} × ${s.sets[0].reps} @ ${w(s.sets[0].kg)}`}
                   </Text>
                   {s.attempt && (
                     <Text style={styles.hint}>
@@ -222,18 +219,18 @@ export function PrGoalScreen() {
                     </Text>
                   )}
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Start ${s.title}`} onPress={() => start(s)} style={styles.startBtn}>
-                  <Text style={styles.startText}>Start</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={tr("Start {0}", [s.title])} onPress={() => start(s)} style={styles.startBtn}>
+                  <Text style={styles.startText}>{tr("Start")}</Text>
                 </Pressable>
               </View>
             ))}
 
             <Pressable accessibilityRole="button" onPress={() => setMaxModal(true)} style={styles.secondary}>
               <Feather name="award" size={20} color={colors.accent} />
-              <Text style={styles.secondaryText}>I lifted a new max</Text>
+              <Text style={styles.secondaryText}>{tr("I lifted a new max")}</Text>
             </Pressable>
 
-            <Text style={styles.section}>THE 4-WEEK CYCLE</Text>
+            <Text style={styles.section}>{tr("THE 4-WEEK CYCLE")}</Text>
             <View style={styles.road}>
               {WEEK_NAMES.map((name, i) => {
                 const p = sessionPlan(goal, i, 'main');
@@ -241,26 +238,26 @@ export function PrGoalScreen() {
                 return (
                   <View key={name} style={[styles.roadRow, on && styles.roadRowOn]}>
                     <Text style={[styles.roadWeek, on && { color: colors.accent }]}>W{i + 1}</Text>
-                    <Text style={styles.roadName}>{name}</Text>
+                    <Text style={styles.roadName}>{tr(name)}</Text>
                     <Text style={styles.roadScheme}>
-                      {p.attempt ? `up to ${w(p.attempt)}` : `${p.sets.length}×${p.sets[0].reps} @ ${w(p.sets[0].kg)}`}
+                      {p.attempt ? tr("up to {0}", [w(p.attempt)]) : `${p.sets.length}×${p.sets[0].reps} @ ${w(p.sets[0].kg)}`}
                     </Text>
                   </View>
                 );
               })}
             </View>
             <Text style={styles.hint}>
-              After the max test week the plan starts again from your new max. Weights are recalculated whenever you log a new max. This is a training guide, not medical advice: warm up, use safety arms or a spotter, and stop if something hurts.
+              {tr("After the max test week the plan starts again from your new max. Weights are recalculated whenever you log a new max. This is a training guide, not medical advice: warm up, use safety arms or a spotter, and stop if something hurts.")}
             </Text>
           </>
         )}
 
         <View style={styles.actions}>
           <Pressable accessibilityRole="button" onPress={() => navigation.navigate('PrGoalEdit', { id: goal.id })} style={styles.link}>
-            <Text style={styles.linkText}>Edit goal</Text>
+            <Text style={styles.linkText}>{tr("Edit goal")}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.link}>
-            <Text style={[styles.linkText, { color: colors.danger }]}>Delete goal</Text>
+            <Text style={[styles.linkText, { color: colors.danger }]}>{tr("Delete goal")}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -269,24 +266,24 @@ export function PrGoalScreen() {
         <View style={styles.backdrop}>
           <View style={styles.box} accessibilityViewIsModal>
             <Text accessibilityRole="header" style={styles.boxTitle}>
-              New 1-rep max
+              {tr("New 1-rep max")}
             </Text>
-            <Text style={styles.hint}>The weight you lifted once with good form ({unit}).</Text>
+            <Text style={styles.hint}>{tr("The weight you lifted once with good form ({0}).", [unit])}</Text>
             <TextInput
               value={newMax}
               onChangeText={setNewMax}
               keyboardType="decimal-pad"
               autoFocus
-              accessibilityLabel="New one rep max"
+              accessibilityLabel={tr("New one rep max")}
               placeholder={String(toDisplay(goal.current_kg, unit))}
               placeholderTextColor={colors.muted}
               style={styles.boxInput}
             />
             <Pressable accessibilityRole="button" onPress={saveMax} style={styles.primary}>
-              <Text style={styles.primaryText}>Save</Text>
+              <Text style={styles.primaryText}>{tr("Save")}</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => setMaxModal(false)} style={styles.link}>
-              <Text style={styles.linkText}>Cancel</Text>
+              <Text style={styles.linkText}>{tr("Cancel")}</Text>
             </Pressable>
           </View>
         </View>

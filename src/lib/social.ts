@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+import { tr } from './i18n';
 // ---- Types (see supabase/CONTRACT.md) ----
 
 export type TopLift = { name: string; kg: number; reps: number };
@@ -50,44 +51,45 @@ export type SocialResult<T> = ({ ok: true } & T) | SocialFailure;
 
 // ---- Error texts ----
 
-const ERRORS: Record<string, string> = {
-  username_required: 'Set your own username first (Settings), then you can add friends.',
-  user_not_found: 'No user found with that name or code.',
-  cannot_add_self: "That's you. Try a friend's username.",
-  already_friends: 'You are already friends.',
-  already_requested: 'You already sent a request to this person.',
-  user_blocked: 'You blocked this person. Unblock them first.',
-  rate_limited: 'Too many requests today. Try again tomorrow.',
-  too_many_attempts: 'Too many attempts. Please wait a while and try again.',
-  request_not_found: 'This request no longer exists.',
-  cannot_block_self: "You can't block yourself.",
-  cannot_report_self: "You can't report yourself.",
-  not_friends: 'You are not friends with this person.',
-  sharing_disabled: 'This friend is not sharing their workouts.',
-  invalid_amount: 'Choose an amount between 1 and 20.',
-  cannot_gift_self: "You can't send credits to yourself.",
-  gift_limit_reached: 'Daily gift limit reached.',
-  insufficient_credits: 'Not enough credits.',
-  invalid_code: 'That invite code is not valid.',
-  already_redeemed: 'You already used an invite code.',
-  invite_window_expired: 'This invite code can no longer be used.',
-  own_code: "That's your own invite code.",
-  mutual_invite: "You can't use this code.",
-  not_authenticated: 'Please sign in again.',
-  network: 'Network problem. Check your connection and try again.',
-  unknown: 'Something went wrong. Please try again.',
-};
+const errors = (): Record<string, string> => ({
+  username_required: tr("Set your own username first (Settings), then you can add friends."),
+  user_not_found: tr("No user found with that name or code."),
+  cannot_add_self: tr("That's you. Try a friend's username."),
+  already_friends: tr("You are already friends."),
+  already_requested: tr("You already sent a request to this person."),
+  user_blocked: tr("You blocked this person. Unblock them first."),
+  rate_limited: tr("Too many requests today. Try again tomorrow."),
+  too_many_attempts: tr("Too many attempts. Please wait a while and try again."),
+  request_not_found: tr("This request no longer exists."),
+  cannot_block_self: tr("You can't block yourself."),
+  cannot_report_self: tr("You can't report yourself."),
+  not_friends: tr("You are not friends with this person."),
+  sharing_disabled: tr("This friend is not sharing their workouts."),
+  invalid_amount: tr("Choose an amount between 1 and 20."),
+  cannot_gift_self: tr("You can't send credits to yourself."),
+  gift_limit_reached: tr("Daily gift limit reached."),
+  insufficient_credits: tr("Not enough credits."),
+  invalid_code: tr("That invite code is not valid."),
+  already_redeemed: tr("You already used an invite code."),
+  invite_window_expired: tr("This invite code can no longer be used."),
+  own_code: tr("That's your own invite code."),
+  mutual_invite: tr("You can't use this code."),
+  not_authenticated: tr("Please sign in again."),
+  network: tr("Network problem. Check your connection and try again."),
+  unknown: tr("Something went wrong. Please try again."),
+});
 
 export function errorText(code: string, extra: Record<string, unknown> = {}): string {
   if (code === 'gift_limit_reached' && typeof extra.remaining_24h === 'number') {
     return extra.remaining_24h > 0
-      ? `Daily gift limit reached. You can still send ${extra.remaining_24h} credits today.`
-      : 'Daily gift limit reached. Try again tomorrow.';
+      ? tr("Daily gift limit reached. You can still send {0} credits today.", [extra.remaining_24h])
+      : tr("Daily gift limit reached. Try again tomorrow.");
   }
   if (code === 'insufficient_credits' && typeof extra.balance === 'number') {
-    return `Not enough credits (you have ${extra.balance}).`;
+    return tr("Not enough credits (you have {0}).", [extra.balance]);
   }
-  return ERRORS[code] ?? ERRORS.unknown;
+  const table = errors();
+  return table[code] ?? table.unknown;
 }
 
 function fail(code: string, extra: Record<string, unknown> = {}): SocialFailure {
@@ -153,19 +155,19 @@ export async function getOwnSharing(userId: string): Promise<boolean | null> {
 // ---- Helpers ----
 
 export function timeAgo(iso: string | null | undefined, now: number = Date.now()): string {
-  if (!iso) return 'No workouts yet';
+  if (!iso) return tr("No workouts yet");
   const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return 'No workouts yet';
+  if (!Number.isFinite(t)) return tr("No workouts yet");
   const min = Math.floor(Math.max(0, now - t) / 60000);
-  if (min < 1) return 'Just now';
-  if (min < 60) return `${min} min ago`;
+  if (min < 1) return tr("Just now");
+  if (min < 60) return tr("{0} min ago", [min]);
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} h ago`;
+  if (h < 24) return tr("{0} h ago", [h]);
   const d = Math.floor(h / 24);
-  if (d === 1) return 'Yesterday';
-  if (d < 14) return `${d} days ago`;
-  if (d < 60) return `${Math.floor(d / 7)} weeks ago`;
-  return `${Math.floor(d / 30)} months ago`;
+  if (d === 1) return tr("Yesterday");
+  if (d < 14) return tr("{0} days ago", [d]);
+  if (d < 60) return tr("{0} weeks ago", [Math.floor(d / 7)]);
+  return tr("{0} months ago", [Math.floor(d / 30)]);
 }
 
 export function sortFriends(list: Friend[]): Friend[] {

@@ -9,6 +9,7 @@ import { useColors } from '../context/ThemeContext';
 import { ExerciseMini } from '../components/ExerciseMini';
 import { ExerciseInfoModal } from '../components/ExerciseInfoModal';
 
+import { tr } from '../lib/i18n';
 export function LibraryScreen() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -19,22 +20,22 @@ export function LibraryScreen() {
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
     return EXERCISES.filter(
-      (e) => (muscle === 'All' || e.muscle === muscle) && e.name.toLowerCase().includes(q),
+      (e) => (muscle === 'All' || e.muscle === muscle) && (e.name.toLowerCase().includes(q) || tr(e.name).toLowerCase().includes(q)),
     );
   }, [query, muscle]);
 
   return (
     <Screen>
-      <Header title="Exercise Library" />
+      <Header title={tr("Exercise Library")} />
       <View style={styles.search}>
         <Feather name="search" size={20} color={colors.muted} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search exercises"
+          placeholder={tr("Search exercises")}
           placeholderTextColor={colors.muted}
           value={query}
           onChangeText={setQuery}
-          accessibilityLabel="Search exercises"
+          accessibilityLabel={tr("Search exercises")}
           returnKeyType="search"
         />
       </View>
@@ -50,7 +51,7 @@ export function LibraryScreen() {
                 onPress={() => setMuscle(m)}
                 style={[styles.chip, on && { backgroundColor: colors.accent }]}
               >
-                <Text style={[styles.chipText, on && { color: colors.onAccent }]}>{m}</Text>
+                <Text style={[styles.chipText, on && { color: colors.onAccent }]}>{tr(m)}</Text>
               </Pressable>
             );
           })}
@@ -62,18 +63,18 @@ export function LibraryScreen() {
         contentContainerStyle={{ gap: 10 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<Text style={styles.empty}>No exercises found</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{tr("No exercises found")}</Text>}
         renderItem={({ item }) => (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${item.name}, how to do it`}
+            accessibilityLabel={tr("{0}, how to do it", [item.name])}
             onPress={() => setInfo(item.name)}
             style={styles.row}
           >
             <View style={styles.rowText}>
-              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.name}>{tr(item.name)}</Text>
               <Text style={styles.meta}>
-                {item.muscle} · {item.equipment}
+                {tr(item.muscle)} · {tr(item.equipment)}
               </Text>
             </View>
             <ExerciseMini name={item.name} height={48} />

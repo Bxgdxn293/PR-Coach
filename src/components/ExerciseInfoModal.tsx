@@ -10,6 +10,7 @@ import { MUSCLE_LABEL } from '../data/bodyPaths';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 /** Full-screen "how to" with front/back body map, steps and a tip. `name = null` keeps it closed. */
 export function ExerciseInfoModal({ name, onClose }: { name: string | null; onClose: () => void }) {
   const colors = useColors();
@@ -23,16 +24,16 @@ export function ExerciseInfoModal({ name, onClose }: { name: string | null; onCl
       <Screen hideCredits>
         <View style={styles.head}>
           <Text accessibilityRole="header" style={styles.title} numberOfLines={2}>
-            {name}
+            {name ? tr(name) : name}
           </Text>
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.close}>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={tr("Close")} style={styles.close}>
             <Feather name="x" size={20} color={colors.text} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
           {lib && (
             <Text style={styles.meta}>
-              {lib.muscle} · {lib.equipment}
+              {tr(lib.muscle)} · {tr(lib.equipment)}
             </Text>
           )}
           {info ? (
@@ -43,8 +44,8 @@ export function ExerciseInfoModal({ name, onClose }: { name: string | null; onCl
               <View style={[styles.card, styles.mapCard]}>
                 <MuscleMap primary={info.p} secondary={info.s} height={200} />
                 <View style={styles.labels}>
-                  <Text style={styles.label}>FRONT</Text>
-                  <Text style={styles.label}>BACK</Text>
+                  <Text style={styles.label}>{tr("FRONT")}</Text>
+                  <Text style={styles.label}>{tr("BACK")}</Text>
                 </View>
               </View>
               <View style={styles.card}>
@@ -60,7 +61,7 @@ export function ExerciseInfoModal({ name, onClose }: { name: string | null; onCl
                 )}
               </View>
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>How to do it</Text>
+                <Text style={styles.cardTitle}>{tr("How to do it")}</Text>
                 {info.steps.map((t, i) => (
                   <View key={i} style={styles.stepRow}>
                     <Text style={styles.stepNum}>{i + 1}</Text>
@@ -69,13 +70,13 @@ export function ExerciseInfoModal({ name, onClose }: { name: string | null; onCl
                 ))}
               </View>
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Tip</Text>
+                <Text style={styles.cardTitle}>{tr("Tip")}</Text>
                 <Text style={styles.stepText}>{info.tip}</Text>
               </View>
-              <Text style={styles.meta}>General guidance, not personal coaching. Start light and stop if something hurts.</Text>
+              <Text style={styles.meta}>{tr("General guidance, not personal coaching. Start light and stop if something hurts.")}</Text>
             </>
           ) : (
-            <Text style={styles.meta}>No description for this exercise yet.</Text>
+            <Text style={styles.meta}>{tr("No description for this exercise yet.")}</Text>
           )}
         </ScrollView>
       </Screen>

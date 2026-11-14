@@ -864,6 +864,19 @@ begin
 end;
 $$;
 
+-- Secret theme: the app calls this after a hidden gesture; there is no hint about it anywhere in the app. Afterwards
+-- 'shadow' is part of theme_unlocked, so set_theme('shadow') works and friends see the colour via list_friends.
+create or replace function public.unlock_shadow() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  me uuid := public._uid();
+begin
+  update public.profiles p set theme_unlocked = array_append(p.theme_unlocked, 'shadow')
+   where p.id = me and not ('shadow' = any (p.theme_unlocked));
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
 create or replace function public.set_sharing(enabled boolean) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -1239,7 +1252,7 @@ do $$
 declare
   fn text;
   sig text;
-  user_fns constant text[] := array['app_config', 'set_username', 'set_theme', 'set_sharing', 'my_credits', 'gift_credits',
+  user_fns constant text[] := array['app_config', 'set_username', 'set_theme', 'unlock_shadow', 'set_sharing', 'my_credits', 'gift_credits',
     'redeem_invite', 'send_friend_request', 'respond_friend_request', 'remove_friend', 'block_user', 'unblock_user', 'report_user',
     'list_blocked', 'list_friend_requests', 'list_friends', 'friend_workouts'];
   service_fns constant text[] := array['spend_credits', 'refund_credits', 'refund_stale_form_checks', '_gen_invite_code'];

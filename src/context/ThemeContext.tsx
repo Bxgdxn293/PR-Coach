@@ -7,9 +7,11 @@ type ThemeCtx = { themeId: ThemeId; setTheme: (id: ThemeId) => void; colors: Pal
 const KEY = 'settings.theme';
 const DEFAULT_THEME: ThemeId = 'lime';
 
+const isTheme = (v: unknown): v is ThemeId => typeof v === 'string' && Object.prototype.hasOwnProperty.call(THEMES, v);
+
 /** Reine Hilfsfunktion: Palette zu einer Theme-ID (z. B. fuer Freunde-Profile). Unbekannte IDs fallen auf lime zurueck. */
 export function paletteFor(id: ThemeId | string | null | undefined): Palette {
-  return id && id in THEMES ? THEMES[id as ThemeId] : THEMES[DEFAULT_THEME];
+  return isTheme(id) ? THEMES[id] : THEMES[DEFAULT_THEME];
 }
 
 const Ctx = createContext<ThemeCtx>({
@@ -21,10 +23,17 @@ const Ctx = createContext<ThemeCtx>({
 export const useTheme = () => useContext(Ctx);
 export const useColors = (): Palette => useContext(Ctx).colors;
 
-/** Shows a subtree in another palette (e.g. a friend's profile in the friend's colour). Does not change the user's own theme. */
-export function ThemeOverride({ palette, children }: { palette: Palette; children: React.ReactNode }) {
+/**
+ * Shows a subtree in another palette (e.g. a friend's profile in the friend's colour). Does not change the user's own
+ * theme. Pass `themeId` too so theme effects (the animated Shadow background) follow the shown palette.
+ */
+export function ThemeOverride({ palette, themeId, children }: { palette: Palette; themeId?: ThemeId | string | null; children: React.ReactNode }) {
   const parent = useTheme();
-  const value = useMemo<ThemeCtx>(() => ({ themeId: parent.themeId, setTheme: parent.setTheme, colors: palette }), [parent.themeId, parent.setTheme, palette]);
+  const shown: ThemeId = isTheme(themeId) ? themeId : DEFAULT_THEME;
+  const value = useMemo<ThemeCtx>(
+    () => ({ themeId: themeId === undefined ? parent.themeId : shown, setTheme: parent.setTheme, colors: palette }),
+    [themeId, shown, parent.themeId, parent.setTheme, palette],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
@@ -34,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((v) => {
-        if (v === 'lime' || v === 'blue' || v === 'red' || v === 'purple' || v === 'gold') setThemeId(v);
+        if (isTheme(v)) setThemeId(v);
       })
       .catch(() => {});
   }, []);

@@ -22,6 +22,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function FormCheckScreen() {
@@ -61,10 +62,10 @@ export function FormCheckScreen() {
     return navigation.addListener('beforeRemove', (e) => {
       if (!recording || leaving.current) return;
       e.preventDefault();
-      Alert.alert('Stop recording?', 'The current recording will be discarded.', [
-        { text: 'Keep recording', style: 'cancel' },
+      Alert.alert(tr("Stop recording?"), tr("The current recording will be discarded."), [
+        { text: tr("Keep recording"), style: 'cancel' },
         {
-          text: 'Discard',
+          text: tr("Discard"),
           style: 'destructive',
           onPress: () => {
             leaving.current = true;
@@ -83,7 +84,7 @@ export function FormCheckScreen() {
     return () => clearInterval(id);
   }, [recording]);
 
-  const header = <Header title="Form Check" />;
+  const header = <Header title={tr("Form Check")} />;
 
   if (!ready) {
     return (
@@ -102,11 +103,11 @@ export function FormCheckScreen() {
         {header}
         <View style={styles.center}>
           <Feather name="wifi-off" size={40} color={colors.muted} />
-          <Text style={styles.lockTitle}>Could not load your credits</Text>
-          <Text style={styles.lockText}>{credits.error ?? 'Check your connection and try again.'}</Text>
+          <Text style={styles.lockTitle}>{tr("Could not load your credits")}</Text>
+          <Text style={styles.lockText}>{credits.error ?? tr("Check your connection and try again.")}</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={() => credits.refresh()} style={styles.cta}>
-          <Text style={styles.ctaText}>Retry</Text>
+          <Text style={styles.ctaText}>{tr("Retry")}</Text>
         </Pressable>
       </Screen>
     );
@@ -119,25 +120,25 @@ export function FormCheckScreen() {
         {header}
         <View style={styles.center}>
           <Feather name="zap" size={40} color={colors.accent} />
-          <Text style={styles.lockTitle}>Not enough credits</Text>
+          <Text style={styles.lockTitle}>{tr("Not enough credits")}</Text>
           <Text style={styles.lockText}>
-            A Form Check costs {cost} credits. You have {credits.balance}, so you need {missing} more.
+            {tr("A Form Check costs {0} credits. You have {1}, so you need {2} more.", [cost, credits.balance, missing])}
           </Text>
           <View style={styles.earnBox}>
             <Text style={styles.earnTitle}>
-              {wp.qualifying_this_week} / {wp.goal} workouts this week
+              {wp.qualifying_this_week} / {wp.goal} {tr("workouts this week")}
             </Text>
             <View style={styles.track}>
               <View style={[styles.fill, { width: `${Math.min(100, (wp.qualifying_this_week / Math.max(1, wp.goal)) * 100)}%` }]} />
             </View>
-            <Text style={styles.earnText}>Reach your weekly goal to earn +{wp.bonus} credits.</Text>
+            <Text style={styles.earnText}>{tr("Reach your weekly goal to earn +{0} credits.", [wp.bonus])}</Text>
           </View>
         </View>
         <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Credits')} style={styles.cta}>
-          <Text style={styles.ctaText}>Earn credits</Text>
+          <Text style={styles.ctaText}>{tr("Earn credits")}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Paywall')} style={styles.ctaAlt}>
-          <Text style={styles.ctaAltText}>Go Premium</Text>
+          <Text style={styles.ctaAltText}>{tr("Go Premium")}</Text>
         </Pressable>
       </Screen>
     );
@@ -160,9 +161,9 @@ export function FormCheckScreen() {
         {header}
         <View style={styles.center}>
           <Feather name="camera" size={40} color={colors.muted} />
-          <Text style={styles.lockTitle}>Camera access needed</Text>
+          <Text style={styles.lockTitle}>{tr("Camera access needed")}</Text>
           <Text style={styles.lockText}>
-            The camera records your set so it can be analysed. Videos are not saved to your gallery.
+            {tr("The camera records your set so it can be analysed. Videos are not saved to your gallery.")}
           </Text>
         </View>
         <Pressable
@@ -170,7 +171,7 @@ export function FormCheckScreen() {
           onPress={() => (permission.canAskAgain ? requestPermission() : Linking.openSettings())}
           style={styles.cta}
         >
-          <Text style={styles.ctaText}>{permission.canAskAgain ? 'Allow camera' : 'Open settings'}</Text>
+          <Text style={styles.ctaText}>{permission.canAskAgain ? tr("Allow camera") : tr("Open settings")}</Text>
         </Pressable>
       </Screen>
     );
@@ -183,11 +184,11 @@ export function FormCheckScreen() {
     } catch {}
     const ok = await new Promise<boolean>((resolve) =>
       Alert.alert(
-        'Send frames to AI?',
-        'To analyse your technique, a few still frames from your video are sent to our server and to Anthropic, an AI provider. The video is not uploaded and the frames are not stored by us.',
+        tr("Send frames to AI?"),
+        tr("To analyse your technique, a few still frames from your video are sent to our server and to Anthropic, an AI provider. The video is not uploaded and the frames are not stored by us."),
         [
-          { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-          { text: 'I agree', onPress: () => resolve(true) },
+          { text: tr("Cancel"), style: 'cancel', onPress: () => resolve(false) },
+          { text: tr("I agree"), onPress: () => resolve(true) },
         ],
         { cancelable: true, onDismiss: () => resolve(false) },
       ),
@@ -203,10 +204,10 @@ export function FormCheckScreen() {
   const process = async (uri: string, durationMs: number) => {
     try {
       if (!(await askConsent())) return;
-      setBusy('Preparing your set…');
+      setBusy(tr("Preparing your set…"));
       const frames = await extractFrames(uri, durationMs);
       if (!mounted.current) return;
-      setBusy('Analysing your technique…');
+      setBusy(tr("Analysing your technique…"));
       const result = await analyse(exercise, frames);
       credits.refresh();
       if (!mounted.current) return;
@@ -217,7 +218,7 @@ export function FormCheckScreen() {
       credits.refresh();
       if (!mounted.current) return;
       setBusy(null);
-      Alert.alert('Form Check', describeError(e));
+      Alert.alert(tr("Form Check"), describeError(e));
     }
   };
 
@@ -234,14 +235,14 @@ export function FormCheckScreen() {
       setRecording(false);
       if (!video?.uri) return;
       if (durationMs < MIN_RECORD_MS) {
-        Alert.alert('Too short', 'Record at least a few seconds of your set.');
+        Alert.alert(tr("Too short"), tr("Record at least a few seconds of your set."));
         return;
       }
       await process(video.uri, durationMs);
     } catch {
       if (!mounted.current || discard.current) return;
       setRecording(false);
-      Alert.alert('Form Check', 'Recording failed. Please try again.');
+      Alert.alert(tr("Form Check"), tr("Recording failed. Please try again."));
     }
   };
 
@@ -262,14 +263,14 @@ export function FormCheckScreen() {
               onPress={() => setExercise(e)}
               style={[styles.chip, on && { backgroundColor: colors.accent }]}
             >
-              <Text style={[styles.chipText, on && { color: colors.onAccent }]}>{e}</Text>
+              <Text style={[styles.chipText, on && { color: colors.onAccent }]}>{tr(e)}</Text>
             </Pressable>
           );
         })}
       </View>
 
       <Text style={styles.costLine}>
-        {isPremium ? 'Free with Premium' : `This check costs ${cost} credits · You have ${credits.balance}`}
+        {isPremium ? tr("Free with Premium") : tr("This check costs {0} credits · You have {1}", [cost, credits.balance])}
       </Text>
 
       <View style={styles.viewfinder}>
@@ -283,9 +284,7 @@ export function FormCheckScreen() {
         />
         <View style={styles.hint}>
           <Text style={styles.hintText}>
-            {recording
-              ? `Recording ${seconds}s of ${MAX_RECORD_SEC}s`
-              : 'Film side-on, 2–3 m away, full body in frame, good light.'}
+            {recording ? tr("Recording {0}s of {1}s", [seconds, MAX_RECORD_SEC]) : tr("Film side-on, 2–3 m away, full body in frame, good light.")}
           </Text>
         </View>
         {busy && (
@@ -299,14 +298,14 @@ export function FormCheckScreen() {
       <View style={styles.recordWrap}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={recording ? 'Stop recording' : 'Start recording'}
+          accessibilityLabel={recording ? tr("Stop recording") : tr("Start recording")}
           onPress={recording ? stop : start}
           disabled={!!busy || (!cameraReady && !recording)}
           style={[styles.ring, (!!busy || (!cameraReady && !recording)) && { opacity: 0.4 }]}
         >
           <View style={[styles.dot, recording && styles.dotStop]} />
         </Pressable>
-        <Text style={styles.recordLabel}>{recording ? 'Tap to stop' : 'Tap to record your set'}</Text>
+        <Text style={styles.recordLabel}>{recording ? tr("Tap to stop") : tr("Tap to record your set")}</Text>
       </View>
     </Screen>
   );

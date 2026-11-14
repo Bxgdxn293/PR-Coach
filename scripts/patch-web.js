@@ -73,6 +73,7 @@ const tags = [
   '<meta name="theme-color" content="#0b0c10">',
 ];
 const missing = tags.filter((t) => !html.includes(t.slice(0, 30)));
+missing.push('<style>html,body{background:#0b0c10;min-height:100%;overscroll-behavior:none}</style>');
 html = html.replace('</head>', missing.join('\n') + '\n</head>');
 // no zoom/overscroll surprises on a phone
 html = html.replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">');

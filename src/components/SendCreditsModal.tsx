@@ -5,6 +5,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import { giftCredits } from '../lib/social';
 
+import { tr } from '../lib/i18n';
 const MIN = 1;
 const MAX = 20;
 
@@ -42,7 +43,7 @@ export function SendCreditsModal({
     const res = await giftCredits(friendId, amount);
     setBusy(false);
     if (res.ok) {
-      setDone(`Sent ${amount} credit${amount === 1 ? '' : 's'} to ${username}. Your balance: ${res.balance}.`);
+      setDone(tr("Credits sent: {0}. Recipient: {1}. Your balance: {2}.", [amount, username, res.balance]));
     } else {
       setError(res.message);
     }
@@ -53,9 +54,9 @@ export function SendCreditsModal({
       <View style={styles.backdrop}>
         <View style={styles.sheet} accessibilityViewIsModal>
           <Text accessibilityRole="header" style={styles.title}>
-            Send credits
+            {tr("Send credits")}
           </Text>
-          <Text style={styles.sub}>Gift credits to {username}. 1 to 20 per gift.</Text>
+          <Text style={styles.sub}>{tr("Gift credits to {0}. 1 to 20 per gift.", [username])}</Text>
 
           {done ? (
             <>
@@ -63,7 +64,7 @@ export function SendCreditsModal({
                 {done}
               </Text>
               <Pressable accessibilityRole="button" onPress={onClose} style={styles.primary}>
-                <Text style={styles.primaryText}>Done</Text>
+                <Text style={styles.primaryText}>{tr("Done")}</Text>
               </Pressable>
             </>
           ) : (
@@ -71,19 +72,19 @@ export function SendCreditsModal({
               <View style={styles.stepper}>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Decrease amount"
+                  accessibilityLabel={tr("Decrease amount")}
                   disabled={amount <= MIN || busy}
                   onPress={() => setAmount((a) => Math.max(MIN, a - 1))}
                   style={[styles.stepBtn, (amount <= MIN || busy) && styles.dim]}
                 >
                   <Feather name="minus" size={22} color={colors.text} />
                 </Pressable>
-                <Text style={styles.amount} accessibilityLabel={`${amount} credits`}>
+                <Text style={styles.amount} accessibilityLabel={tr("{0} credits", [amount])}>
                   {amount}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Increase amount"
+                  accessibilityLabel={tr("Increase amount")}
                   disabled={amount >= MAX || busy}
                   onPress={() => setAmount((a) => Math.min(MAX, a + 1))}
                   style={[styles.stepBtn, (amount >= MAX || busy) && styles.dim]}
@@ -106,11 +107,11 @@ export function SendCreditsModal({
                 {busy ? (
                   <ActivityIndicator color={colors.onAccent} />
                 ) : (
-                  <Text style={styles.primaryText}>Send {amount}</Text>
+                  <Text style={styles.primaryText}>{tr("Send {0}", [amount])}</Text>
                 )}
               </Pressable>
               <Pressable accessibilityRole="button" onPress={onClose} style={styles.secondary}>
-                <Text style={styles.secondaryText}>Cancel</Text>
+                <Text style={styles.secondaryText}>{tr("Cancel")}</Text>
               </Pressable>
             </>
           )}

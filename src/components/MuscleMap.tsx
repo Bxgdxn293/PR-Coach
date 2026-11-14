@@ -3,6 +3,7 @@ import Svg, { Defs, G, LinearGradient, Path, Stop } from 'react-native-svg';
 import { ARM, BACK, FRONT, HEAD, LEG, NECK, TORSO, type Shape } from '../data/bodyPaths';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 /**
  * Front and back silhouette with the trained muscles in red (primary: solid, secondary: softer).
  * One SVG, 210 x 200 units (front 0..100, back 110..210); `height` scales it, width follows.
@@ -65,7 +66,7 @@ export function MuscleMap({
       width={width}
       height={height}
       viewBox={`0 0 ${view === 'both' ? 210 : 100} 200`}
-      accessibilityLabel={`Body map, trained muscles in red`}
+      accessibilityLabel={tr("Body map, trained muscles in red")}
     >
       <Defs>
         <LinearGradient id="muscleRed" x1="0" y1="0" x2="0" y2="1">

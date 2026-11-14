@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Palette } from '../theme';
-import { useColors } from '../context/ThemeContext';
+import { useColors, useTheme } from '../context/ThemeContext';
+import { ShadowBackdrop } from './ShadowBackdrop';
 import { CreditsChip } from './CreditsChip';
 
 export function Screen({
@@ -16,9 +17,11 @@ export function Screen({
   hideCredits?: boolean;
 }) {
   const colors = useColors();
+  const { themeId } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <SafeAreaView style={styles.safe}>
+      {themeId === 'shadow' && <ShadowBackdrop />}
       {!hideCredits && (
         <View style={styles.chipRow}>
           <CreditsChip />

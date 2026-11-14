@@ -68,6 +68,7 @@ Außerdem Edge-Function-Secret `FORM_CHECK_DAILY_LIMIT` (Default 5 pro 24 h, gil
 
 ### Profil
 - `set_username(username text)` -> `{ok:true, username}`; Fehler `invalid_username` (nicht `[a-z0-9_]{3,20}`; Eingabe wird klein geschrieben), `username_taken`, `too_many_attempts`.
+- `unlock_shadow()` -> `{ok:true}`: hängt das geheime Theme `shadow` an `theme_unlocked` an (die App ruft es nach einer versteckten Geste auf, es gibt keinen Hinweis darin). Danach funktioniert `set_theme('shadow')`, und Freunde sehen es über `list_friends`.
 - `set_theme(theme text)` -> `{ok:true, theme}`; Fehler `theme_locked`. `blue` wird automatisch nach 4, `red` nach 26, `purple` nach 52 (`gold`: Bankdrücken ≥ 100 kg × 1, siehe THEME_GOLD_BENCH_KG) aufeinanderfolgenden Wochen freigeschaltet, in denen es je >= 3 zählende Tage mit einem Training von >= 30 Minuten gab (Lücke = Serie bricht ab; beim Speichern des Trainings, steht danach dauerhaft in `theme_unlocked`). `my_credits()` liefert `theme_streak_weeks` (laufende 30-Min-Serie, Fortschrittsanzeige). Pro Tag speichert `qualifying_days.duration_sec` das längste gültige Training; ein längeres zweites Training am selben Tag wertet den Tag für die Theme-Serie auf, gibt aber keine zusätzlichen Credits.
 - `set_sharing(enabled boolean)` -> `{ok:true, share_enabled}`. **Default ist `false`** (Opt-in). Jederzeit umschaltbar. Den aktuellen Wert liest die App aus `profiles.share_enabled` (eigene Zeile, direkt per select).
 

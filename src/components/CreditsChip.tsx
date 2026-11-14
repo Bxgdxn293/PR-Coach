@@ -7,6 +7,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import { useCredits } from '../context/CreditsContext';
 
+import { tr } from '../lib/i18n';
 /** Compact credits balance pill; tapping opens the Credits screen. Safe outside Credits/Navigation providers. */
 export function CreditsChip() {
   const colors = useColors();
@@ -30,7 +31,7 @@ export function CreditsChip() {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Credits: ${value}. Streak: ${weeks} ${weeks === 1 ? 'week' : 'weeks'} in a row. Open credits`}
+      accessibilityLabel={tr("Credits: {0}. Streak: {1} {2} in a row. Open credits", [value, weeks, weeks === 1 ? 'week' : 'weeks'])}
       onPress={open}
       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
       style={({ pressed }) => [styles.chip, weeks > 0 && styles.chipOn, pressed && { opacity: 0.7 }]}
@@ -43,7 +44,7 @@ export function CreditsChip() {
       <MaterialCommunityIcons name="fire" size={18} color={weeks > 0 ? colors.accent : colors.muted} />
       <Text style={[styles.text, weeks === 0 && { color: colors.muted }]} numberOfLines={1}>
         {weeks}
-        <Text style={styles.unit}> wk</Text>
+        <Text style={styles.unit}> {tr("wk")}</Text>
       </Text>
     </Pressable>
   );

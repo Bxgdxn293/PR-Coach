@@ -8,6 +8,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { Unit } from '../types';
 
+import { tr } from '../lib/i18n';
 type Props = {
   visible: boolean;
   exercise: string;
@@ -35,30 +36,30 @@ export function WarmupModal({ visible, exercise, workingWeight, unit, onClose }:
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <Screen hideCredits>
         <View style={styles.head}>
-          <Text style={styles.title}>Warm-up &amp; plates</Text>
-          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" style={styles.close}>
+          <Text style={styles.title}>{tr("Warm-up & plates")}</Text>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={tr("Close")} style={styles.close}>
             <Feather name="x" size={20} color={colors.text} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Text style={styles.exercise}>{exercise}</Text>
+          <Text style={styles.exercise}>{tr(exercise)}</Text>
           <View style={styles.inputRow}>
-            <Text style={styles.label}>WORKING WEIGHT ({unit.toUpperCase()})</Text>
+            <Text style={styles.label}>{tr("WORKING WEIGHT ({0})", [unit.toUpperCase()])}</Text>
             <TextInput
               value={text}
               onChangeText={setText}
               keyboardType="decimal-pad"
-              accessibilityLabel="Working weight"
+              accessibilityLabel={tr("Working weight")}
               placeholder="0"
               placeholderTextColor={colors.muted}
               style={styles.input}
             />
           </View>
 
-          <Text style={styles.section}>WARM-UP SETS</Text>
+          <Text style={styles.section}>{tr("WARM-UP SETS")}</Text>
           {warmups.length === 0 ? (
             <Text style={styles.hint}>
-              {work > 0 ? `Working weight is at or below the empty bar (${BAR[unit]} ${unit}), no warm-up ladder needed.` : 'Enter your working weight to see warm-up sets.'}
+              {work > 0 ? tr("Working weight is at or below the empty bar ({0} {1}), no warm-up ladder needed.", [BAR[unit], unit]) : tr("Enter your working weight to see warm-up sets.")}
             </Text>
           ) : (
             warmups.map((s) => (
@@ -71,32 +72,32 @@ export function WarmupModal({ visible, exercise, workingWeight, unit, onClose }:
             ))
           )}
 
-          <Text style={styles.section}>PLATES PER SIDE</Text>
+          <Text style={styles.section}>{tr("PLATES PER SIDE")}</Text>
           {work <= 0 ? (
-            <Text style={styles.hint}>Enter your working weight to see the plates.</Text>
+            <Text style={styles.hint}>{tr("Enter your working weight to see the plates.")}</Text>
           ) : plates.belowBar ? (
             <Text style={styles.hint}>
-              Below the empty bar ({BAR[unit]} {unit}).
+              {tr("Below the empty bar ({0} {1}).", [BAR[unit], unit])}
             </Text>
           ) : (
             <View style={styles.card}>
               <View style={styles.flex}>
                 <Text style={styles.big}>
-                  {plates.perSide.length === 0 ? 'Empty bar' : plates.perSide.map((p) => `${p.count} × ${fmt(p.plate)}`).join(' + ')}
+                  {plates.perSide.length === 0 ? tr("Empty bar") : plates.perSide.map((p) => `${p.count} × ${fmt(p.plate)}`).join(' + ')}
                 </Text>
                 <Text style={styles.hint}>
-                  Bar {BAR[unit]} {unit} · loaded {fmt(plates.loaded)} {unit}
+                  {tr("Bar {0} {1} · loaded {2} {1}", [BAR[unit], unit, fmt(plates.loaded)])}
                 </Text>
                 {plates.remainder > 0 && (
                   <Text style={styles.warn}>
-                    {fmt(plates.remainder)} {unit} short: not reachable with these plates, rounded down.
+                    {tr("{0} {1} short: not reachable with these plates, rounded down.", [fmt(plates.remainder), unit])}
                   </Text>
                 )}
               </View>
             </View>
           )}
           <Text style={styles.hint}>
-            Assumes a {BAR[unit]} {unit} bar and the standard {unit} plate set.
+            {tr("Assumes a {0} {1} bar and the standard {1} plate set.", [BAR[unit], unit])}
           </Text>
         </ScrollView>
       </Screen>

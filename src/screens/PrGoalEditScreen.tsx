@@ -16,6 +16,7 @@ import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr, dateLocale } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function PrGoalEditScreen() {
@@ -71,7 +72,7 @@ export function PrGoalEditScreen() {
 
   const save = async () => {
     if (!check.ok) {
-      Alert.alert('Check your numbers', check.error);
+      Alert.alert(tr("Check your numbers"), check.error);
       return;
     }
     if (id) await update(id, { exercise, current_kg: curKg, target_kg: tgtKg, sessions_per_week: perWeek, ...(perWeek === 1 ? { pace: 'steady' as const } : {}) });
@@ -81,17 +82,17 @@ export function PrGoalEditScreen() {
 
   return (
     <Screen>
-      <Header title={id ? 'Edit goal' : 'New goal'} />
+      <Header title={id ? tr("Edit goal") : tr("New goal")} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={styles.label}>LIFT</Text>
+        <Text style={styles.label}>{tr("LIFT")}</Text>
         <Pressable accessibilityRole="button" onPress={() => !id && setPicker(true)} style={styles.card}>
-          <Text style={styles.value}>{exercise}</Text>
+          <Text style={styles.value}>{tr(exercise)}</Text>
           {!id && <Feather name="chevron-down" size={20} color={colors.muted} />}
         </Pressable>
 
         <View style={styles.two}>
           <View style={styles.flex}>
-            <Text style={styles.label}>CURRENT 1-REP MAX ({unit.toUpperCase()})</Text>
+            <Text style={styles.label}>{tr("CURRENT 1-REP MAX ({0})", [unit.toUpperCase()])}</Text>
             <TextInput
               value={current}
               onChangeText={(t) => {
@@ -99,28 +100,28 @@ export function PrGoalEditScreen() {
                 setEstimated(false);
               }}
               keyboardType="decimal-pad"
-              accessibilityLabel="Current one rep max"
+              accessibilityLabel={tr("Current one rep max")}
               placeholder="120"
               placeholderTextColor={colors.muted}
               style={styles.input}
             />
           </View>
           <View style={styles.flex}>
-            <Text style={styles.label}>GOAL ({unit.toUpperCase()})</Text>
+            <Text style={styles.label}>{tr("GOAL ({0})", [unit.toUpperCase()])}</Text>
             <TextInput
               value={target}
               onChangeText={setTarget}
               keyboardType="decimal-pad"
-              accessibilityLabel="Goal one rep max"
+              accessibilityLabel={tr("Goal one rep max")}
               placeholder="150"
               placeholderTextColor={colors.muted}
               style={[styles.input, { color: colors.accent }]}
             />
           </View>
         </View>
-        {estimated && <Text style={styles.hint}>Estimated from your logged sets. Change it if you know your real 1-rep max.</Text>}
+        {estimated && <Text style={styles.hint}>{tr("Estimated from your logged sets. Change it if you know your real 1-rep max.")}</Text>}
 
-        <Text style={styles.label}>SESSIONS PER WEEK FOR THIS LIFT</Text>
+        <Text style={styles.label}>{tr("SESSIONS PER WEEK FOR THIS LIFT")}</Text>
         <View style={styles.seg}>
           {([1, 2] as const).map((n) => (
             <Pressable
@@ -131,7 +132,7 @@ export function PrGoalEditScreen() {
               style={[styles.segBtn, perWeek === n && { backgroundColor: colors.accent }]}
             >
               <Text style={[styles.segText, perWeek === n && { color: colors.onAccent }]}>
-                {n === 1 ? '1 (main)' : '2 (main + support)'}
+                {n === 1 ? tr("1 (main)") : tr("2 (main + support)")}
               </Text>
             </Pressable>
           ))}
@@ -142,11 +143,11 @@ export function PrGoalEditScreen() {
           <View style={styles.card}>
             <View style={styles.flex}>
               <Text style={styles.value}>
-                {weeks === null ? 'More than 3 years' : `About ${weeks} weeks`}
+                {weeks === null ? tr("More than 3 years") : tr("About {0} weeks", [weeks])}
               </Text>
               <Text style={styles.hint}>
-                {eta ? `Around ${eta.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}. ` : ''}
-                An estimate at a normal pace, not a promise. Sleep, food and form decide the real speed.
+                {eta ? tr("Around {0}. ", [eta.toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' })]) : ''}
+                {tr("An estimate at a normal pace, not a promise. Sleep, food and form decide the real speed.")}
               </Text>
             </View>
           </View>
@@ -154,11 +155,11 @@ export function PrGoalEditScreen() {
         {check.warning && <Text style={styles.hint}>{check.warning}</Text>}
       </ScrollView>
       <Pressable accessibilityRole="button" onPress={save} style={styles.primary}>
-        <Text style={styles.primaryText}>{id ? 'Save goal' : 'Start my plan'}</Text>
+        <Text style={styles.primaryText}>{id ? tr("Save goal") : tr("Start my plan")}</Text>
       </Pressable>
       <ExercisePicker
         visible={picker}
-        title="Choose the lift"
+        title={tr("Choose the lift")}
         onClose={() => setPicker(false)}
         onPick={(n) => {
           setExercise(n);

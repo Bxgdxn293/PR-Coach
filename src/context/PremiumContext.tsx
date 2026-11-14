@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import type { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { useAuth } from './AuthContext';
 
+import { tr } from '../lib/i18n';
 // react-native-purchases is native only: never run it in the web build (friends test version).
 const Purchases: typeof import('react-native-purchases').default =
   Platform.OS === 'web' ? (null as never) : require('react-native-purchases').default;
@@ -96,7 +97,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
       return null;
     } catch (e: any) {
       if (e?.userCancelled) return null;
-      return e?.message ?? 'Purchase failed.';
+      return e?.message ?? tr("Purchase failed.");
     }
   };
 
@@ -104,9 +105,9 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     try {
       const info = await Purchases.restorePurchases();
       apply(info);
-      return info.entitlements.active[ENTITLEMENT] ? null : 'No active subscription found.';
+      return info.entitlements.active[ENTITLEMENT] ? null : tr("No active subscription found.");
     } catch (e: any) {
-      return e?.message ?? 'Restore failed.';
+      return e?.message ?? tr("Restore failed.");
     }
   };
 

@@ -26,6 +26,7 @@ import { fonts, type Palette } from '../theme';
 import { paletteFor, ThemeOverride, useColors } from '../context/ThemeContext';
 import type { RootStackParamList } from '../types';
 
+import { tr } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'FriendProfile'>;
 
@@ -103,7 +104,7 @@ export function FriendProfileScreen() {
     const res = await removeFriend(friendId);
     setBusy(false);
     if (res.ok) navigation.goBack();
-    else Alert.alert('Could not remove friend', res.message);
+    else Alert.alert(tr("Could not remove friend"), res.message);
   };
 
   const doBlock = async () => {
@@ -111,22 +112,22 @@ export function FriendProfileScreen() {
     const res = await blockUser(friendId);
     setBusy(false);
     if (res.ok) navigation.goBack();
-    else Alert.alert('Could not block', res.message);
+    else Alert.alert(tr("Could not block"), res.message);
   };
 
   const confirmRemove = () =>
-    Alert.alert('Remove friend?', `${username} will no longer see your data and you won't see theirs.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: doRemove },
+    Alert.alert(tr("Remove friend?"), tr("{0} will no longer see your data and you won't see theirs.", [username]), [
+      { text: tr("Cancel"), style: 'cancel' },
+      { text: tr("Remove"), style: 'destructive', onPress: doRemove },
     ]);
 
   const confirmBlock = () =>
     Alert.alert(
-      'Block this user?',
-      `${username} will be removed from your friends and can't send you requests. You can unblock later.`,
+      tr("Block this user?"),
+      tr("{0} will be removed from your friends and can't send you requests. You can unblock later.", [username]),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Block', style: 'destructive', onPress: doBlock },
+        { text: tr("Cancel"), style: 'cancel' },
+        { text: tr("Block"), style: 'destructive', onPress: doBlock },
       ],
     );
 
@@ -135,31 +136,31 @@ export function FriendProfileScreen() {
     const res = await reportUser(friendId, reason);
     setBusy(false);
     if (res.ok) {
-      Alert.alert('Report sent', 'Thank you. We review reports within 24 hours. You can also block this user.');
-    } else Alert.alert('Could not send report', res.message);
+      Alert.alert(tr("Report sent"), tr("Thank you. We review reports within 24 hours. You can also block this user."));
+    } else Alert.alert(tr("Could not send report"), res.message);
   };
 
   // Android shows at most 3 buttons per dialog, so the menus are split into short steps (outside tap = cancel).
   const openReport = () =>
     Alert.alert(
-      'Report this user',
-      'What is the problem?',
+      tr("Report this user"),
+      tr("What is the problem?"),
       [
-        { text: 'Spam', onPress: () => sendReport('spam') },
-        { text: 'Abuse or harassment', onPress: () => sendReport('abuse') },
-        { text: 'Something else', onPress: openReportMore },
+        { text: tr("Spam"), onPress: () => sendReport('spam') },
+        { text: tr("Abuse or harassment"), onPress: () => sendReport('abuse') },
+        { text: tr("Something else"), onPress: openReportMore },
       ],
       { cancelable: true },
     );
 
   const openReportMore = () =>
     Alert.alert(
-      'Report this user',
-      'What is the problem?',
+      tr("Report this user"),
+      tr("What is the problem?"),
       [
-        { text: 'Inappropriate name', onPress: () => sendReport('inappropriate_name') },
-        { text: 'Other', onPress: () => sendReport('other') },
-        { text: 'Cancel', style: 'cancel' },
+        { text: tr("Inappropriate name"), onPress: () => sendReport('inappropriate_name') },
+        { text: tr("Other"), onPress: () => sendReport('other') },
+        { text: tr("Cancel"), style: 'cancel' },
       ],
       { cancelable: true },
     );
@@ -169,9 +170,9 @@ export function FriendProfileScreen() {
       username,
       undefined,
       [
-        { text: 'Remove friend', onPress: confirmRemove },
-        { text: 'Report', onPress: openReport },
-        { text: 'Block', style: 'destructive', onPress: confirmBlock },
+        { text: tr("Remove friend"), onPress: confirmRemove },
+        { text: tr("Report"), onPress: openReport },
+        { text: tr("Block"), style: 'destructive', onPress: confirmBlock },
       ],
       { cancelable: true },
     );
@@ -181,7 +182,7 @@ export function FriendProfileScreen() {
   const menuBtn = (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="More options"
+      accessibilityLabel={tr("More options")}
       disabled={busy || !friend}
       onPress={openMenu}
       style={[styles.menuBtn, (busy || !friend) && styles.dim]}
@@ -191,26 +192,26 @@ export function FriendProfileScreen() {
   );
 
   return (
-    <ThemeOverride palette={palette}>
+    <ThemeOverride palette={palette} themeId={friend ? friend.theme : undefined}>
     <Screen>
       <Header title={username} right={menuBtn} />
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={palette.accent} size="large" accessibilityLabel="Loading profile" />
+          <ActivityIndicator color={palette.accent} size="large" accessibilityLabel={tr("Loading profile")} />
         </View>
       ) : error ? (
         <View style={styles.center}>
-          <Text style={styles.emptyTitle}>Couldn't load profile</Text>
+          <Text style={styles.emptyTitle}>{tr("Couldn't load profile")}</Text>
           <Text style={styles.emptyText}>{error}</Text>
           <Pressable accessibilityRole="button" onPress={() => load('initial')} style={styles.primary}>
-            <Text style={styles.primaryText}>Retry</Text>
+            <Text style={styles.primaryText}>{tr("Retry")}</Text>
           </Pressable>
         </View>
       ) : gone || !friend ? (
         <View style={styles.center}>
           <Feather name="user-x" size={32} color={palette.muted} />
-          <Text style={styles.emptyTitle}>Not your friend anymore</Text>
-          <Text style={styles.emptyText}>This person is no longer in your friends list.</Text>
+          <Text style={styles.emptyTitle}>{tr("Not your friend anymore")}</Text>
+          <Text style={styles.emptyText}>{tr("This person is no longer in your friends list.")}</Text>
         </View>
       ) : (
         <ScrollView
@@ -220,54 +221,54 @@ export function FriendProfileScreen() {
           }
         >
           <View style={styles.hero}>
-            <Text style={styles.heroLabel}>STREAK</Text>
-            <Text style={styles.heroValue} accessibilityLabel={`${friend.streak_weeks} week streak`}>
-              {friend.streak_weeks} {friend.streak_weeks === 1 ? 'week' : 'weeks'}
+            <Text style={styles.heroLabel}>{tr("STREAK")}</Text>
+            <Text style={styles.heroValue} accessibilityLabel={tr("{0} week streak", [friend.streak_weeks])}>
+              {friend.streak_weeks} {friend.streak_weeks === 1 ? tr("week") : tr("weeks")}
             </Text>
             <ThemeBadge theme={friend.theme} />
             {friend.share_enabled && (
               <Text style={styles.heroSub}>
-                {friend.qualifying_this_week ?? 0}/{WEEKLY_GOAL} workouts this week · last {timeAgo(friend.last_workout_at).toLowerCase()}
+                {tr("{0}/{1} workouts this week · last {2}", [friend.qualifying_this_week ?? 0, WEEKLY_GOAL, timeAgo(friend.last_workout_at).toLowerCase()])}
               </Text>
             )}
           </View>
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Send credits to ${username}`}
+            accessibilityLabel={tr("Send credits to {0}", [username])}
             onPress={() => setGiftOpen(true)}
             style={styles.action}
           >
             <Feather name="gift" size={20} color={palette.text} />
-            <Text style={styles.actionText}>Send credits</Text>
+            <Text style={styles.actionText}>{tr("Send credits")}</Text>
           </Pressable>
 
           {!friend.share_enabled ? (
             <View style={styles.empty}>
               <Feather name="eye-off" size={28} color={palette.muted} />
-              <Text style={styles.emptyTitle}>Sharing is off</Text>
-              <Text style={styles.emptyText}>{username} isn't sharing workouts, weights or records right now.</Text>
+              <Text style={styles.emptyTitle}>{tr("Sharing is off")}</Text>
+              <Text style={styles.emptyText}>{username} {tr("isn't sharing workouts, weights or records right now.")}</Text>
             </View>
           ) : (
             <>
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
                   <Text style={styles.statValue}>{friend.qualifying_this_week ?? 0}/{WEEKLY_GOAL}</Text>
-                  <Text style={styles.statLabel}>This week</Text>
+                  <Text style={styles.statLabel}>{tr("This week")}</Text>
                 </View>
                 <View style={styles.stat}>
                   <Text style={styles.statValue}>{friend.total_workouts ?? 0}</Text>
-                  <Text style={styles.statLabel}>Workouts</Text>
+                  <Text style={styles.statLabel}>{tr("Workouts")}</Text>
                 </View>
               </View>
 
-              <Text style={styles.section}>TOP LIFTS</Text>
+              <Text style={styles.section}>{tr("TOP LIFTS")}</Text>
               {(friend.top_lifts ?? []).length === 0 ? (
-                <Text style={styles.emptyText}>No records yet.</Text>
+                <Text style={styles.emptyText}>{tr("No records yet.")}</Text>
               ) : (
                 (friend.top_lifts ?? []).map((l) => (
-                  <View key={l.name} style={styles.row} accessibilityLabel={`${l.name}, ${w(l.kg)} for ${l.reps} reps`}>
-                    <Text style={styles.rowName}>{l.name}</Text>
+                  <View key={l.name} style={styles.row} accessibilityLabel={tr("{0}, {1} for {2} reps", [l.name, w(l.kg), l.reps])}>
+                    <Text style={styles.rowName}>{tr(l.name)}</Text>
                     <Text style={styles.rowValue}>
                       {w(l.kg)} × {l.reps}
                     </Text>
@@ -275,16 +276,16 @@ export function FriendProfileScreen() {
                 ))
               )}
 
-              <Text style={styles.section}>RECENT WORKOUTS</Text>
+              <Text style={styles.section}>{tr("RECENT WORKOUTS")}</Text>
               {workoutsError ? (
                 <View style={styles.empty}>
                   <Text style={styles.errText}>{workoutsError}</Text>
                   <Pressable accessibilityRole="button" onPress={() => load('refresh')} style={styles.action}>
-                    <Text style={styles.actionText}>Retry</Text>
+                    <Text style={styles.actionText}>{tr("Retry")}</Text>
                   </Pressable>
                 </View>
               ) : workouts.length === 0 ? (
-                <Text style={styles.emptyText}>No workouts yet.</Text>
+                <Text style={styles.emptyText}>{tr("No workouts yet.")}</Text>
               ) : (
                 workouts.map((wk) => (
                   <View key={wk.id} style={styles.workout}>
@@ -298,7 +299,7 @@ export function FriendProfileScreen() {
                     </View>
                     {wk.entries.map((e, i) => (
                       <View key={`${e.name}-${i}`} style={styles.entry}>
-                        <Text style={styles.entryName}>{e.name}</Text>
+                        <Text style={styles.entryName}>{tr(e.name)}</Text>
                         <Text style={styles.entrySets}>
                           {e.sets.map((s) => `${toDisplay(s.kg, unit)}×${s.reps}`).join('  ')}
                         </Text>

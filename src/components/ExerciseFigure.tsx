@@ -6,6 +6,7 @@ import { patternFor } from '../lib/figurePatterns';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 /** Looping animation of an exercise (drawn figure, not a video) with the trained muscles in red. */
 export function ExerciseFigure({
   name,
@@ -61,7 +62,7 @@ export function ExerciseFigure({
     <View
       style={styles.wrap}
       accessible
-      accessibilityLabel={`${name}: animated movement. Trained muscles are shown in red.`}
+      accessibilityLabel={tr("{0}: animated movement. Trained muscles are shown in red.", [name])}
     >
       <Svg width={width} height={height} viewBox={box}>
         <Defs>
@@ -82,7 +83,7 @@ export function ExerciseFigure({
           ),
         )}
       </Svg>
-      <Text style={styles.note}>Loop animation, not a video</Text>
+      <Text style={styles.note}>{tr("Loop animation, not a video")}</Text>
     </View>
   );
 }

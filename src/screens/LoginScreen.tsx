@@ -6,6 +6,7 @@ import { supabaseConfigured } from '../lib/supabase';
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 export function LoginScreen() {
   const colors = useColors();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -18,7 +19,7 @@ export function LoginScreen() {
 
   const submit = async () => {
     if (!email.includes('@') || password.length < 6) {
-      setMessage('Enter a valid email and a password with at least 6 characters.');
+      setMessage(tr("Enter a valid email and a password with at least 6 characters."));
       return;
     }
     setBusy(true);
@@ -32,60 +33,60 @@ export function LoginScreen() {
     <Screen hideCredits>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.top}>
-          <Text style={styles.brand}>Fitness</Text>
-          <Text style={styles.sub}>Log workouts. Beat your records.</Text>
+          <Text style={styles.brand}>{tr("Fitness")}</Text>
+          <Text style={styles.sub}>{tr("Log workouts. Beat your records.")}</Text>
         </View>
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder={tr("Email")}
             placeholderTextColor={colors.muted}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
             value={email}
             onChangeText={setEmail}
-            accessibilityLabel="Email"
+            accessibilityLabel={tr("Email")}
           />
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder={tr("Password")}
             placeholderTextColor={colors.muted}
             secureTextEntry
             autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
             value={password}
             onChangeText={setPassword}
-            accessibilityLabel="Password"
+            accessibilityLabel={tr("Password")}
           />
           {message && <Text style={styles.message}>{message}</Text>}
           {!supabaseConfigured && (
-            <Text style={styles.message}>Supabase is not configured. Set the EXPO_PUBLIC_SUPABASE_* variables.</Text>
+            <Text style={styles.message}>{tr("Supabase is not configured. Set the EXPO_PUBLIC_SUPABASE_* variables.")}</Text>
           )}
           <Pressable style={styles.primary} onPress={submit} disabled={busy} accessibilityRole="button">
             {busy ? (
               <ActivityIndicator color={colors.onAccent} />
             ) : (
-              <Text style={styles.primaryText}>{mode === 'in' ? 'Sign in' : 'Create account'}</Text>
+              <Text style={styles.primaryText}>{mode === 'in' ? tr("Sign in") : tr("Create account")}</Text>
             )}
           </Pressable>
           {mode === 'in' && (
             <Pressable
               onPress={async () => {
-                if (!email.includes('@')) return setMessage('Enter your email above first.');
+                if (!email.includes('@')) return setMessage(tr("Enter your email above first."));
                 setBusy(true);
                 const err = await resetPassword(email);
-                setMessage(err ?? 'If this email has an account, a reset link is on its way.');
+                setMessage(err ?? tr("If this email has an account, a reset link is on its way."));
                 setBusy(false);
               }}
               style={styles.switch}
               accessibilityRole="button"
             >
-              <Text style={styles.switchText}>Forgot password?</Text>
+              <Text style={styles.switchText}>{tr("Forgot password?")}</Text>
             </Pressable>
           )}
           <Pressable onPress={() => setMode(mode === 'in' ? 'up' : 'in')} style={styles.switch} accessibilityRole="button">
             <Text style={styles.switchText}>
-              {mode === 'in' ? 'New here? Create an account' : 'Already have an account? Sign in'}
+              {mode === 'in' ? tr("New here? Create an account") : tr("Already have an account? Sign in")}
             </Text>
           </Pressable>
         </View>

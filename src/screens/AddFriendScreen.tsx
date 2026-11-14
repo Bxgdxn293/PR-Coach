@@ -24,6 +24,7 @@ import {
 import { fonts, type Palette } from '../theme';
 import { useColors } from '../context/ThemeContext';
 
+import { tr } from '../lib/i18n';
 type Notice = { kind: 'ok' | 'error'; text: string };
 
 export function AddFriendScreen() {
@@ -67,7 +68,7 @@ export function AddFriendScreen() {
         setInput('');
         setNotice({
           kind: 'ok',
-          text: `You are now friends with ${redeemed.inviter_username ?? 'your inviter'}.`,
+          text: tr("You are now friends with {0}.", [redeemed.inviter_username ?? tr("your inviter")]),
         });
         return;
       }
@@ -75,7 +76,7 @@ export function AddFriendScreen() {
       // Show the code error only if it is more specific than "not found".
       setNotice({
         kind: 'error',
-        text: redeemed.error === 'invalid_code' ? 'No user or invite code found for that entry.' : redeemed.message,
+        text: redeemed.error === 'invalid_code' ? tr("No user or invite code found for that entry.") : redeemed.message,
       });
       return;
     }
@@ -86,8 +87,8 @@ export function AddFriendScreen() {
         kind: 'ok',
         text:
           res.status === 'accepted'
-            ? 'You are now friends.'
-            : 'Request sent. They will see it in their friends list.',
+            ? tr("You are now friends.")
+            : tr("Request sent. They will see it in their friends list."),
       });
     } else {
       setNotice({ kind: 'error', text: res.message });
@@ -96,31 +97,31 @@ export function AddFriendScreen() {
 
   const share = async () => {
     if (!me?.invite_code) return;
-    const who = me.username ? ` My username is ${me.username}.` : '';
+    const who = me.username ? tr(" My username is {0}.", [me.username]) : '';
     try {
       await Share.share({
-        message: `Join me on the fitness app and let's keep each other going! Use my invite code ${me.invite_code}.${who}`,
+        message: tr("Join me on the fitness app and let's keep each other going! Use my invite code {0}.{1}", [me.invite_code, who]),
       });
     } catch {
-      setNotice({ kind: 'error', text: "Couldn't open the share sheet." });
+      setNotice({ kind: 'error', text: tr("Couldn't open the share sheet.") });
     }
   };
 
   return (
     <Screen>
-      <Header title="Add friend" />
+      <Header title={tr("Add friend")} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Username or invite code</Text>
+            <Text style={styles.cardTitle}>{tr("Username or invite code")}</Text>
             <TextInput
-              accessibilityLabel="Username or invite code"
+              accessibilityLabel={tr("Username or invite code")}
               value={input}
               onChangeText={(t) => {
                 setInput(t);
                 if (notice) setNotice(null);
               }}
-              placeholder="e.g. alex_fit or K7M2QX9P"
+              placeholder={tr("e.g. alex_fit or K7M2QX9P")}
               placeholderTextColor={colors.muted}
               autoCapitalize="none"
               autoCorrect={false}
@@ -139,7 +140,7 @@ export function AddFriendScreen() {
               {busy ? (
                 <ActivityIndicator color={colors.onAccent} />
               ) : (
-                <Text style={styles.primaryText}>Send request</Text>
+                <Text style={styles.primaryText}>{tr("Send request")}</Text>
               )}
             </Pressable>
             {notice && (
@@ -151,41 +152,40 @@ export function AddFriendScreen() {
               </Text>
             )}
             <Text style={styles.hint}>
-              You need your own username to add friends. You can send up to 20 requests per day. Too many failed
-              lookups in an hour pause searching for a while.
+              {tr("You need your own username to add friends. You can send up to 20 requests per day. Too many failed lookups in an hour pause searching for a while.")}
             </Text>
           </View>
 
-          <Text style={styles.section}>YOUR DETAILS</Text>
+          <Text style={styles.section}>{tr("YOUR DETAILS")}</Text>
           <View style={styles.card}>
             {meLoading ? (
-              <ActivityIndicator color={colors.accent} accessibilityLabel="Loading your invite code" />
+              <ActivityIndicator color={colors.accent} accessibilityLabel={tr("Loading your invite code")} />
             ) : meError || !me ? (
               <>
-                <Text style={styles.noticeErr}>{meError ?? 'Could not load your details.'}</Text>
+                <Text style={styles.noticeErr}>{meError ?? tr("Could not load your details.")}</Text>
                 <Pressable accessibilityRole="button" onPress={loadMe} style={styles.secondary}>
-                  <Text style={styles.secondaryText}>Retry</Text>
+                  <Text style={styles.secondaryText}>{tr("Retry")}</Text>
                 </Pressable>
               </>
             ) : (
               <>
-                <Text style={styles.label}>Username</Text>
+                <Text style={styles.label}>{tr("Username")}</Text>
                 <Text style={styles.value} selectable>
-                  {me.username ?? 'Not set yet (set it in Settings)'}
+                  {me.username ?? tr("Not set yet (set it in Settings)")}
                 </Text>
-                <Text style={styles.label}>Invite code</Text>
-                <Text style={styles.code} selectable accessibilityLabel={`Your invite code ${me.invite_code ?? 'unavailable'}`}>
-                  {me.invite_code ?? 'Unavailable'}
+                <Text style={styles.label}>{tr("Invite code")}</Text>
+                <Text style={styles.code} selectable accessibilityLabel={tr("Your invite code {0}", [me.invite_code ?? 'unavailable'])}>
+                  {me.invite_code ?? tr("Unavailable")}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Share my invite code"
+                  accessibilityLabel={tr("Share my invite code")}
                   disabled={!me.invite_code}
                   onPress={share}
                   style={[styles.secondary, !me.invite_code && styles.dim]}
                 >
                   <Feather name="share" size={18} color={colors.text} />
-                  <Text style={styles.secondaryText}>Share invite</Text>
+                  <Text style={styles.secondaryText}>{tr("Share invite")}</Text>
                 </Pressable>
               </>
             )}

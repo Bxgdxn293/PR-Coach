@@ -10,10 +10,11 @@ import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
 import { useCredits } from '../context/CreditsContext';
 import { useSettings } from '../context/SettingsContext';
-import { fonts, THEMES, type Palette, type ThemeId } from '../theme';
+import { fonts, paletteOf, type AnyThemeId, type Palette } from '../theme';
 import { useColors, useTheme } from '../context/ThemeContext';
 import type { RootStackParamList, Unit } from '../types';
 
+import { tr, LANGS } from '../lib/i18n';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const PRIVACY_URL = process.env.EXPO_PUBLIC_PRIVACY_URL ?? '';
@@ -28,23 +29,23 @@ export function SettingsScreen() {
   const navigation = useNavigation<Nav>();
   const { user, signOut, deleteAccount } = useAuth();
   const { isPremium, restore, configured } = usePremium();
-  const { unit, setUnit } = useSettings();
+  const { unit, setUnit, lang, setLang } = useSettings();
   const credits = useCredits();
   const { themeId } = useTheme();
-  const ThemeLabel: Record<ThemeId, string> = { lime: 'Lime', blue: 'Blue', red: 'Red', purple: 'Purple', gold: 'Gold' };
+  const ThemeLabel: Record<AnyThemeId, string> = { lime: tr('Lime'), blue: tr('Blue'), red: tr('Red'), purple: tr('Purple'), gold: tr('Gold'), shadow: tr('Shadow') };
 
   const confirmDelete = () =>
     Alert.alert(
-      'Delete account?',
-      'This permanently deletes your account and all workouts. An active subscription is not cancelled automatically: cancel it in your App Store / Google Play subscriptions.',
+      tr("Delete account?"),
+      tr("This permanently deletes your account and all workouts. An active subscription is not cancelled automatically: cancel it in your App Store / Google Play subscriptions."),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: tr("Cancel"), style: 'cancel' },
         {
-          text: 'Delete',
+          text: tr("Delete"),
           style: 'destructive',
           onPress: async () => {
             const err = await deleteAccount();
-            if (err) Alert.alert('Could not delete account', err);
+            if (err) Alert.alert(tr("Could not delete account"), err);
           },
         },
       ],
@@ -52,17 +53,37 @@ export function SettingsScreen() {
 
   const doRestore = async () => {
     const err = await restore();
-    Alert.alert(err ? 'Restore' : 'Restored', err ?? 'Your Premium subscription is active.');
+    Alert.alert(err ? tr("Restore") : tr("Restored"), err ?? tr("Your Premium subscription is active."));
   };
 
   return (
     <Screen>
-      <Header title="Settings" />
+      <Header title={tr("Settings")} />
       <ScrollView contentContainerStyle={styles.list}>
+        <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
+          <View>
+            <Text style={styles.label}>{tr("Language")}</Text>
+            <Text style={styles.sub}>{tr("Choose the app language")}</Text>
+          </View>
+          <View style={[styles.seg, { alignSelf: 'stretch' }]}>
+            {LANGS.map((l) => (
+              <Pressable
+                key={l.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: lang === l.id }}
+                onPress={() => setLang(l.id)}
+                style={[styles.segBtn, { flex: 1, width: undefined }, lang === l.id && { backgroundColor: colors.accent }]}
+              >
+                <Text style={[styles.segText, lang === l.id && { color: colors.onAccent }]}>{l.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <View style={styles.card}>
           <View style={styles.flex}>
-            <Text style={styles.label}>Units</Text>
-            <Text style={styles.sub}>Weight shown in workouts</Text>
+            <Text style={styles.label}>{tr("Units")}</Text>
+            <Text style={styles.sub}>{tr("Weight shown in workouts")}</Text>
           </View>
           <View style={styles.seg}>
             {(['kg', 'lb'] as Unit[]).map((u) => (
@@ -79,63 +100,63 @@ export function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={styles.section}>PROFILE</Text>
+        <Text style={styles.section}>{tr("PROFILE")}</Text>
         <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch', gap: 10 }]}>
           <View style={styles.profRow}>
-            <Text style={styles.sub}>Username</Text>
-            <Text style={styles.profVal}>{credits.username ? `@${credits.username}` : 'Not set'}</Text>
+            <Text style={styles.sub}>{tr("Username")}</Text>
+            <Text style={styles.profVal}>{credits.username ? `@${credits.username}` : tr("Not set")}</Text>
           </View>
           <View style={styles.profRow}>
-            <Text style={styles.sub}>Email</Text>
+            <Text style={styles.sub}>{tr("Email")}</Text>
             <Text style={styles.profVal} selectable numberOfLines={1}>{user?.email ?? '-'}</Text>
           </View>
           <View style={styles.profRow}>
-            <Text style={styles.sub}>Plan</Text>
-            <Text style={styles.profVal}>{isPremium ? 'Premium' : 'Free'}</Text>
+            <Text style={styles.sub}>{tr("Plan")}</Text>
+            <Text style={styles.profVal}>{isPremium ? tr("Premium") : tr("Free")}</Text>
           </View>
           <View style={styles.profRow}>
-            <Text style={styles.sub}>App version</Text>
+            <Text style={styles.sub}>{tr("App version")}</Text>
             <Text style={styles.profVal}>{APP_VERSION}{BUILD ? ` (${BUILD})` : ''}</Text>
           </View>
         </View>
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Interface colors"
+          accessibilityLabel={tr("Interface colors")}
           onPress={() => navigation.navigate('Themes')}
           style={styles.card}
         >
-          <View style={[styles.swatch, { backgroundColor: THEMES[themeId].accent }]} />
+          <View style={[styles.swatch, { backgroundColor: paletteOf(themeId).accent }]} />
           <View style={styles.flex}>
-            <Text style={styles.label}>Interface colors</Text>
-            <Text style={styles.sub}>{ThemeLabel[themeId]} · change the look of the app</Text>
+            <Text style={styles.label}>{tr("Interface colors")}</Text>
+            <Text style={styles.sub}>{ThemeLabel[themeId]} {tr("· change the look of the app")}</Text>
           </View>
           <Feather name="chevron-right" size={22} color={colors.muted} />
         </Pressable>
 
         <View style={styles.card}>
           <View style={styles.flex}>
-            <Text style={styles.label}>{isPremium ? 'Premium' : 'Free plan'}</Text>
+            <Text style={styles.label}>{isPremium ? tr("Premium") : tr("Free plan")}</Text>
             <Text style={styles.sub}>
-              {isPremium ? 'Unlimited workouts. Thank you!' : '3 workouts per week'}
+              {isPremium ? tr("Unlimited workouts. Thank you!") : tr("3 workouts per week")}
             </Text>
           </View>
           {!isPremium && (
             <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Paywall')} style={styles.small}>
-              <Text style={styles.smallText}>Upgrade</Text>
+              <Text style={styles.smallText}>{tr("Upgrade")}</Text>
             </Pressable>
           )}
         </View>
 
-        <Text style={styles.section}>FRIENDS & PRIVACY</Text>
+        <Text style={styles.section}>{tr("FRIENDS & PRIVACY")}</Text>
         <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Blocked')} style={styles.rowBtn}>
-          <Text style={styles.rowText}>Blocked users</Text>
+          <Text style={styles.rowText}>{tr("Blocked users")}</Text>
         </Pressable>
-        <Text style={styles.hint}>Whether friends can see your stats is set on the Friends page.</Text>
+        <Text style={styles.hint}>{tr("Whether friends can see your stats is set on the Friends page.")}</Text>
 
         {configured && (
           <Pressable accessibilityRole="button" onPress={doRestore} style={styles.rowBtn}>
-            <Text style={styles.rowText}>Restore purchases</Text>
+            <Text style={styles.rowText}>{tr("Restore purchases")}</Text>
           </Pressable>
         )}
         {isPremium && (
@@ -150,25 +171,25 @@ export function SettingsScreen() {
             }
             style={styles.rowBtn}
           >
-            <Text style={styles.rowText}>Manage subscription</Text>
+            <Text style={styles.rowText}>{tr("Manage subscription")}</Text>
           </Pressable>
         )}
         {PRIVACY_URL !== '' && (
           <Pressable accessibilityRole="link" onPress={() => Linking.openURL(PRIVACY_URL)} style={styles.rowBtn}>
-            <Text style={styles.rowText}>Privacy policy</Text>
+            <Text style={styles.rowText}>{tr("Privacy policy")}</Text>
           </Pressable>
         )}
         {TERMS_URL !== '' && (
           <Pressable accessibilityRole="link" onPress={() => Linking.openURL(TERMS_URL)} style={styles.rowBtn}>
-            <Text style={styles.rowText}>Terms of use</Text>
+            <Text style={styles.rowText}>{tr("Terms of use")}</Text>
           </Pressable>
         )}
 
         <Pressable accessibilityRole="button" onPress={signOut} style={styles.rowBtn}>
-          <Text style={styles.rowText}>Sign out</Text>
+          <Text style={styles.rowText}>{tr("Sign out")}</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.rowBtn}>
-          <Text style={[styles.rowText, { color: colors.danger }]}>Delete account</Text>
+          <Text style={[styles.rowText, { color: colors.danger }]}>{tr("Delete account")}</Text>
         </Pressable>
       </ScrollView>
     </Screen>

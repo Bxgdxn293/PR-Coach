@@ -36,6 +36,7 @@ export type RootStackParamList = {
   PrGoalEdit: { id?: string } | undefined;
   TemplateEdit: { id?: string } | undefined;
   PRs: undefined;
+  Progress: undefined;
   Library: undefined;
   Settings: undefined;
   Paywall: undefined;

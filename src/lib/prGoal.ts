@@ -1,6 +1,7 @@
 import type { SavedExercise, Workout } from '../types';
 import { bestE1rm } from './coach';
 
+import { tr } from './i18n';
 /**
  * 1-rep-max goals: "I can bench 120 kg for one rep, I want 150 kg".
  * Pure functions only (no React / storage), so the plan logic can be tested.
@@ -82,11 +83,11 @@ export function progressPct(start: number, current: number, target: number): num
 export type GoalCheck = { ok: boolean; error?: string; warning?: string };
 
 export function checkGoal(current: number, target: number): GoalCheck {
-  if (!(current > 0)) return { ok: false, error: 'Enter your current 1-rep max.' };
-  if (current > 600 || target > 800) return { ok: false, error: 'These numbers look too high.' };
-  if (!(target > current)) return { ok: false, error: 'The target has to be higher than your current max.' };
+  if (!(current > 0)) return { ok: false, error: tr("Enter your current 1-rep max.") };
+  if (current > 600 || target > 800) return { ok: false, error: tr("These numbers look too high.") };
+  if (!(target > current)) return { ok: false, error: tr("The target has to be higher than your current max.") };
   if (target / current > 1.5) {
-    return { ok: true, warning: 'That is more than +50%. Consider a first goal closer to your current max, you can raise it later.' };
+    return { ok: true, warning: tr("That is more than +50%. Consider a first goal closer to your current max, you can raise it later.") };
   }
   return { ok: true };
 }
@@ -116,17 +117,17 @@ export function sessionPlan(goal: Pick<PrGoal, 'current_kg' | 'target_kg'> & Par
   const w = ((week % CYCLE_WEEKS) + CYCLE_WEEKS) % CYCLE_WEEKS;
   const at = (pct: number) => roundTo(m * pct);
   if (kind === 'support') {
-    if (w === 3) return { kind, title: 'Light support', scheme: '3 x 6 @ 60%', sets: repeat(3, at(0.6), 6) };
-    return { kind, title: 'Support', scheme: '3 x 8 @ 65%', sets: repeat(3, at(0.65), 8) };
+    if (w === 3) return { kind, title: tr("Light support"), scheme: '3 x 6 @ 60%', sets: repeat(3, at(0.6), 6) };
+    return { kind, title: tr("Support"), scheme: '3 x 8 @ 65%', sets: repeat(3, at(0.65), 8) };
   }
-  if (w === 0) return { kind, title: 'Volume', scheme: '5 x 5 @ 78%', sets: repeat(5, at(0.78), 5) };
-  if (w === 1) return { kind, title: 'Strength', scheme: '4 x 3 @ 85%', sets: repeat(4, at(0.85), 3) };
-  if (w === 2) return { kind, title: 'Heavy', scheme: '3 x 2 @ 91%', sets: repeat(3, at(0.91), 2) };
+  if (w === 0) return { kind, title: tr("Volume"), scheme: '5 x 5 @ 78%', sets: repeat(5, at(0.78), 5) };
+  if (w === 1) return { kind, title: tr("Strength"), scheme: '4 x 3 @ 85%', sets: repeat(4, at(0.85), 3) };
+  if (w === 2) return { kind, title: tr("Heavy"), scheme: '3 x 2 @ 91%', sets: repeat(3, at(0.91), 2) };
   const attempt = attemptKg(goal);
   return {
     kind,
-    title: 'Max test',
-    scheme: `Singles up to ${attempt} kg`,
+    title: tr("Max test"),
+    scheme: tr("Singles up to {0} kg", [attempt]),
     sets: [
       { kg: at(0.8), reps: 2 },
       { kg: at(0.9), reps: 1 },
